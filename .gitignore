@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.streamlit/secrets.toml
+models/
+outputs/
+inputs/youtube/
+inputs/uploads/
+tools/bin/

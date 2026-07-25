@@ -992,3 +992,47 @@ Adaptive Control
 # 22. One-Line Summary
 
 > **현재는 멀티모달 데이터를 기반으로 상황을 이해하는 Context-Aware AIoT Prototype을 구현하고, 향후에는 Agent가 다양한 Context와 Tool을 동적으로 활용하는 범용 AIoT Architecture로 확장한다.**
+
+---
+
+# 23. Vision Context Demo
+
+영상에서 현재 인원 수, 마스크 착용 비율과 혼잡도를 추출하고 영상 재생
+시점에 맞춰 Context JSON을 표시하는 Streamlit 데모이다.
+
+## Setup
+
+Python 3.10 이상을 권장한다.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Run
+
+```bash
+streamlit run realtime_vision_app.py
+```
+
+사이드바에서 MP4, MOV, AVI, MKV 파일을 직접 업로드할 수 있다. 사용 권한이
+있는 3분 이하 YouTube URL도 입력할 수 있으나, 발표 시에는 네트워크 장애를
+피하기 위해 파일 업로드 방식을 권장한다.
+
+분석 결과는 다음 표준 형식으로 제공된다.
+
+```json
+{
+  "person_count": 8,
+  "masked_person_count": 4,
+  "mask_rate": 0.5,
+  "crowding_level": "HIGH"
+}
+```
+
+## Test
+
+```bash
+python -m unittest discover -s tests -v
+```
