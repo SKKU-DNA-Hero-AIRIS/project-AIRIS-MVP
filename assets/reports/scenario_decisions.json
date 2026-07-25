@@ -1,0 +1,1038 @@
+{
+  "policy_metrics": {
+    "train_size": 6000,
+    "holdout_size": 2000,
+    "train_class_distribution": {
+      "LOW": 847,
+      "MEDIUM": 1916,
+      "HIGH": 3237
+    },
+    "reference": "expert rubric (airis.dataset.RUBRIC_WEIGHTS), noise-free",
+    "ml_rubric_fidelity": 0.951,
+    "ml_macro_f1": 0.9501,
+    "hybrid_rubric_fidelity": 0.8925,
+    "flat_baseline_fidelity": 0.701,
+    "flat_baseline_macro_f1": 0.6678,
+    "rule_intervention_rate": 0.0775,
+    "floor_raise_rate": 0.035,
+    "ceiling_damp_rate": 0.0425,
+    "ml_below_reference_rate": 0.024,
+    "hybrid_below_reference_rate": 0.057,
+    "confusion_matrix": {
+      "order": [
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+      ],
+      "ml": [
+        [
+          269,
+          15,
+          0
+        ],
+        [
+          7,
+          607,
+          35
+        ],
+        [
+          0,
+          41,
+          1026
+        ]
+      ],
+      "hybrid": [
+        [
+          276,
+          8,
+          0
+        ],
+        [
+          49,
+          507,
+          93
+        ],
+        [
+          0,
+          65,
+          1002
+        ]
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "scenario_id": "S1",
+      "scenario_label": "사무실 정상 출입",
+      "context": {
+        "vision_context": {
+          "person_count": 3,
+          "mask_rate": 0.67,
+          "crowding_level": "LOW"
+        },
+        "health_context": {
+          "heart_rate": 76,
+          "spo2": 98,
+          "body_temperature": 36.5,
+          "stress_index": 22
+        },
+        "environment_context": {
+          "temperature": 24.0,
+          "humidity": 45,
+          "pm25": 12,
+          "air_quality": "GOOD"
+        },
+        "facility_context": {
+          "facility_type": "office",
+          "label": "일반 사무실",
+          "sensitivity": "LOW",
+          "vulnerable_population": false
+        },
+        "timestamp": "2026-07-24T09:12:00+09:00"
+      },
+      "decision": {
+        "control_level": "LOW",
+        "decision_source": "ML",
+        "ml": {
+          "level": "LOW",
+          "confidence": 98,
+          "probabilities": {
+            "LOW": 0.9849,
+            "MEDIUM": 0.0151,
+            "HIGH": 0.0
+          },
+          "drivers": [
+            {
+              "feature": "fever",
+              "label": "체온 상승폭",
+              "value": 0.0,
+              "contribution": 1.909
+            },
+            {
+              "feature": "pm25_load",
+              "label": "미세먼지 부하",
+              "value": 0.08,
+              "contribution": 1.563
+            },
+            {
+              "feature": "hr_excess",
+              "label": "심박수 상승폭",
+              "value": 0.0,
+              "contribution": 1.185
+            },
+            {
+              "feature": "spo2_deficit",
+              "label": "산소포화도 저하폭",
+              "value": 0.0,
+              "contribution": 1.136
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "LOW",
+          "ceiling_level": "LOW",
+          "fired": [
+            {
+              "rule_id": "C2",
+              "kind": "CEILING",
+              "level": "LOW",
+              "name": "전 지표 정상",
+              "message": "생체·환경·혼잡 지표가 모두 정상 범위"
+            }
+          ]
+        },
+        "baseline_level": "LOW",
+        "interpretation": "일반 사무실의 지표가 안정적인 정상 진입 상황",
+        "reasons": [
+          "미세먼지 부하 0.08 → ML LOW 지지 (+1.56)",
+          "생체·환경·혼잡 지표가 모두 정상 범위"
+        ],
+        "actuation": {
+          "fan_level": 30,
+          "recirculation": "OPEN",
+          "uv_sterilizer": false,
+          "gate_hold_seconds": 2,
+          "air_shower": false,
+          "alert": "NONE"
+        }
+      }
+    },
+    {
+      "scenario_id": "S2",
+      "scenario_label": "헬스장 운동 직후 출입",
+      "context": {
+        "vision_context": {
+          "person_count": 6,
+          "mask_rate": 0.33,
+          "crowding_level": "MEDIUM"
+        },
+        "health_context": {
+          "heart_rate": 138,
+          "spo2": 98,
+          "body_temperature": 37.1,
+          "stress_index": 74
+        },
+        "environment_context": {
+          "temperature": 26.5,
+          "humidity": 58,
+          "pm25": 21,
+          "air_quality": "GOOD"
+        },
+        "facility_context": {
+          "facility_type": "gym",
+          "label": "헬스장",
+          "sensitivity": "LOW",
+          "vulnerable_population": false
+        },
+        "timestamp": "2026-07-24T19:40:00+09:00"
+      },
+      "decision": {
+        "control_level": "MEDIUM",
+        "decision_source": "ML",
+        "ml": {
+          "level": "MEDIUM",
+          "confidence": 78,
+          "probabilities": {
+            "LOW": 0.1283,
+            "MEDIUM": 0.7752,
+            "HIGH": 0.0965
+          },
+          "drivers": [
+            {
+              "feature": "activity_plausible",
+              "label": "신체 활동으로 설명 가능한 심박 상승",
+              "value": 0.691,
+              "contribution": -1.534
+            },
+            {
+              "feature": "hr_excess",
+              "label": "심박수 상승폭",
+              "value": 0.8,
+              "contribution": 0.394
+            },
+            {
+              "feature": "fever_x_vulnerable",
+              "label": "발열 x 취약계층",
+              "value": 0.0,
+              "contribution": 0.359
+            },
+            {
+              "feature": "hr_x_sensitivity",
+              "label": "심박 상승 x 시설 민감도",
+              "value": 0.0,
+              "contribution": 0.244
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "LOW",
+          "ceiling_level": "MEDIUM",
+          "fired": [
+            {
+              "rule_id": "C1",
+              "kind": "CEILING",
+              "level": "MEDIUM",
+              "name": "신체 활동으로 설명 가능",
+              "message": "헬스장의 심박수 138 bpm은 산소·체온 정상으로 운동 후 반응 가능"
+            }
+          ]
+        },
+        "baseline_level": "HIGH",
+        "interpretation": "헬스장에서 하나 이상의 주의 신호가 감지된 관찰 필요 상황",
+        "reasons": [
+          "심박수 상승폭 0.80 → ML MEDIUM 지지 (+0.39)",
+          "헬스장의 심박수 138 bpm은 산소·체온 정상으로 운동 후 반응 가능"
+        ],
+        "actuation": {
+          "fan_level": 65,
+          "recirculation": "FILTERED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 5,
+          "air_shower": false,
+          "alert": "DASHBOARD"
+        }
+      }
+    },
+    {
+      "scenario_id": "S3",
+      "scenario_label": "병원 로비 출입 (S2와 동일 생체 데이터)",
+      "context": {
+        "vision_context": {
+          "person_count": 6,
+          "mask_rate": 0.33,
+          "crowding_level": "MEDIUM"
+        },
+        "health_context": {
+          "heart_rate": 138,
+          "spo2": 98,
+          "body_temperature": 37.1,
+          "stress_index": 74
+        },
+        "environment_context": {
+          "temperature": 26.5,
+          "humidity": 58,
+          "pm25": 21,
+          "air_quality": "GOOD"
+        },
+        "facility_context": {
+          "facility_type": "hospital",
+          "label": "병원",
+          "sensitivity": "HIGH",
+          "vulnerable_population": true
+        },
+        "timestamp": "2026-07-24T19:40:00+09:00"
+      },
+      "decision": {
+        "control_level": "HIGH",
+        "decision_source": "ML",
+        "ml": {
+          "level": "HIGH",
+          "confidence": 100,
+          "probabilities": {
+            "LOW": 0.0,
+            "MEDIUM": 0.0012,
+            "HIGH": 0.9988
+          },
+          "drivers": [
+            {
+              "feature": "hr_x_sensitivity",
+              "label": "심박 상승 x 시설 민감도",
+              "value": 0.8,
+              "contribution": 4.156
+            },
+            {
+              "feature": "hr_excess",
+              "label": "심박수 상승폭",
+              "value": 0.8,
+              "contribution": 1.808
+            },
+            {
+              "feature": "spo2_deficit",
+              "label": "산소포화도 저하폭",
+              "value": 0.0,
+              "contribution": -1.319
+            },
+            {
+              "feature": "pm25_load",
+              "label": "미세먼지 부하",
+              "value": 0.14,
+              "contribution": -0.969
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "LOW",
+          "ceiling_level": "HIGH",
+          "fired": []
+        },
+        "baseline_level": "HIGH",
+        "interpretation": "병원에서 즉각적인 강화 제어가 필요한 고위험 진입 상황",
+        "reasons": [
+          "심박 상승 x 시설 민감도 0.80 → ML HIGH 지지 (+4.16)",
+          "심박수 상승폭 0.80 → ML HIGH 지지 (+1.81)"
+        ],
+        "actuation": {
+          "fan_level": 100,
+          "recirculation": "CLOSED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 11,
+          "air_shower": true,
+          "alert": "MANAGER"
+        }
+      }
+    },
+    {
+      "scenario_id": "S4",
+      "scenario_label": "어린이집 발열 아동 출입",
+      "context": {
+        "vision_context": {
+          "person_count": 6,
+          "mask_rate": 0.5,
+          "crowding_level": "MEDIUM"
+        },
+        "health_context": {
+          "heart_rate": 112,
+          "spo2": 97,
+          "body_temperature": 38.2,
+          "stress_index": 61
+        },
+        "environment_context": {
+          "temperature": 25.5,
+          "humidity": 52,
+          "pm25": 24,
+          "air_quality": "GOOD"
+        },
+        "facility_context": {
+          "facility_type": "daycare",
+          "label": "어린이집",
+          "sensitivity": "HIGH",
+          "vulnerable_population": true
+        },
+        "timestamp": "2026-07-24T08:35:00+09:00"
+      },
+      "decision": {
+        "control_level": "HIGH",
+        "decision_source": "ML",
+        "ml": {
+          "level": "HIGH",
+          "confidence": 100,
+          "probabilities": {
+            "LOW": 0.0,
+            "MEDIUM": 0.0001,
+            "HIGH": 0.9999
+          },
+          "drivers": [
+            {
+              "feature": "fever",
+              "label": "체온 상승폭",
+              "value": 0.636,
+              "contribution": 3.701
+            },
+            {
+              "feature": "fever_x_vulnerable",
+              "label": "발열 x 취약계층",
+              "value": 0.636,
+              "contribution": 2.027
+            },
+            {
+              "feature": "hr_x_sensitivity",
+              "label": "심박 상승 x 시설 민감도",
+              "value": 0.367,
+              "contribution": 1.424
+            },
+            {
+              "feature": "spo2_deficit",
+              "label": "산소포화도 저하폭",
+              "value": 0.0,
+              "contribution": -1.319
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "HIGH",
+          "ceiling_level": "HIGH",
+          "fired": [
+            {
+              "rule_id": "F2",
+              "kind": "FLOOR",
+              "level": "HIGH",
+              "name": "고감도 시설 발열",
+              "message": "어린이집에서 체온 38.2℃ 발열 감지"
+            }
+          ]
+        },
+        "baseline_level": "HIGH",
+        "interpretation": "어린이집에서 즉각적인 강화 제어가 필요한 고위험 진입 상황",
+        "reasons": [
+          "체온 상승폭 0.64 → ML HIGH 지지 (+3.70)",
+          "발열 x 취약계층 0.64 → ML HIGH 지지 (+2.03)",
+          "심박 상승 x 시설 민감도 0.37 → ML HIGH 지지 (+1.42)",
+          "어린이집에서 체온 38.2℃ 발열 감지"
+        ],
+        "actuation": {
+          "fan_level": 100,
+          "recirculation": "CLOSED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 11,
+          "air_shower": true,
+          "alert": "MANAGER"
+        }
+      }
+    },
+    {
+      "scenario_id": "S5",
+      "scenario_label": "학교 하교 시간 고농도 미세먼지",
+      "context": {
+        "vision_context": {
+          "person_count": 24,
+          "mask_rate": 0.29,
+          "crowding_level": "HIGH"
+        },
+        "health_context": {
+          "heart_rate": 88,
+          "spo2": 97,
+          "body_temperature": 36.9,
+          "stress_index": 35
+        },
+        "environment_context": {
+          "temperature": 30.5,
+          "humidity": 68,
+          "pm25": 88,
+          "air_quality": "BAD"
+        },
+        "facility_context": {
+          "facility_type": "school",
+          "label": "학교",
+          "sensitivity": "MEDIUM",
+          "vulnerable_population": true
+        },
+        "timestamp": "2026-07-24T16:05:00+09:00"
+      },
+      "decision": {
+        "control_level": "HIGH",
+        "decision_source": "ML",
+        "ml": {
+          "level": "HIGH",
+          "confidence": 100,
+          "probabilities": {
+            "LOW": 0.0,
+            "MEDIUM": 0.0003,
+            "HIGH": 0.9997
+          },
+          "drivers": [
+            {
+              "feature": "crowding",
+              "label": "밀집도",
+              "value": 0.96,
+              "contribution": 4.396
+            },
+            {
+              "feature": "pm25_x_crowding",
+              "label": "미세먼지 x 밀집",
+              "value": 0.563,
+              "contribution": 2.588
+            },
+            {
+              "feature": "pm25_load",
+              "label": "미세먼지 부하",
+              "value": 0.587,
+              "contribution": 2.025
+            },
+            {
+              "feature": "fever",
+              "label": "체온 상승폭",
+              "value": 0.045,
+              "contribution": -1.673
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "HIGH",
+          "ceiling_level": "HIGH",
+          "fired": [
+            {
+              "rule_id": "F5",
+              "kind": "FLOOR",
+              "level": "HIGH",
+              "name": "취약계층 대기질",
+              "message": "PM2.5 88㎍/㎥ + 취약계층 시설"
+            },
+            {
+              "rule_id": "F6",
+              "kind": "FLOOR",
+              "level": "MEDIUM",
+              "name": "밀집 상태 대기질 저하",
+              "message": "24명 밀집 + PM2.5 88㎍/㎥"
+            },
+            {
+              "rule_id": "F7",
+              "kind": "FLOOR",
+              "level": "MEDIUM",
+              "name": "미착용 밀집",
+              "message": "24명 중 마스크 착용률 29%"
+            }
+          ]
+        },
+        "baseline_level": "MEDIUM",
+        "interpretation": "학교에서 즉각적인 강화 제어가 필요한 고위험 진입 상황",
+        "reasons": [
+          "밀집도 0.96 → ML HIGH 지지 (+4.40)",
+          "미세먼지 x 밀집 0.56 → ML HIGH 지지 (+2.59)",
+          "미세먼지 부하 0.59 → ML HIGH 지지 (+2.02)",
+          "PM2.5 88㎍/㎥ + 취약계층 시설",
+          "24명 밀집 + PM2.5 88㎍/㎥"
+        ],
+        "actuation": {
+          "fan_level": 100,
+          "recirculation": "CLOSED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 9,
+          "air_shower": true,
+          "alert": "MANAGER"
+        }
+      }
+    },
+    {
+      "scenario_id": "S6",
+      "scenario_label": "공장 고온다습 작업 후 출입",
+      "context": {
+        "vision_context": {
+          "person_count": 7,
+          "mask_rate": 0.57,
+          "crowding_level": "MEDIUM"
+        },
+        "health_context": {
+          "heart_rate": 121,
+          "spo2": 96,
+          "body_temperature": 37.6,
+          "stress_index": 84
+        },
+        "environment_context": {
+          "temperature": 34.0,
+          "humidity": 82,
+          "pm25": 46,
+          "air_quality": "MODERATE"
+        },
+        "facility_context": {
+          "facility_type": "factory",
+          "label": "공장",
+          "sensitivity": "MEDIUM",
+          "vulnerable_population": false
+        },
+        "timestamp": "2026-07-24T14:20:00+09:00"
+      },
+      "decision": {
+        "control_level": "HIGH",
+        "decision_source": "ML",
+        "ml": {
+          "level": "HIGH",
+          "confidence": 100,
+          "probabilities": {
+            "LOW": 0.0,
+            "MEDIUM": 0.0005,
+            "HIGH": 0.9995
+          },
+          "drivers": [
+            {
+              "feature": "thermal_load",
+              "label": "실내 고온 부하",
+              "value": 0.714,
+              "contribution": 1.788
+            },
+            {
+              "feature": "fever",
+              "label": "체온 상승폭",
+              "value": 0.364,
+              "contribution": 1.221
+            },
+            {
+              "feature": "stress",
+              "label": "스트레스 지수",
+              "value": 0.84,
+              "contribution": 1.1
+            },
+            {
+              "feature": "humidity_load",
+              "label": "습도 부하",
+              "value": 0.84,
+              "contribution": 1.058
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "LOW",
+          "ceiling_level": "HIGH",
+          "fired": []
+        },
+        "baseline_level": "HIGH",
+        "interpretation": "공장에서 즉각적인 강화 제어가 필요한 고위험 진입 상황",
+        "reasons": [
+          "실내 고온 부하 0.71 → ML HIGH 지지 (+1.79)",
+          "체온 상승폭 0.36 → ML HIGH 지지 (+1.22)",
+          "스트레스 지수 0.84 → ML HIGH 지지 (+1.10)",
+          "습도 부하 0.84 → ML HIGH 지지 (+1.06)"
+        ],
+        "actuation": {
+          "fan_level": 100,
+          "recirculation": "CLOSED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 9,
+          "air_shower": true,
+          "alert": "MANAGER"
+        }
+      }
+    },
+    {
+      "scenario_id": "S7",
+      "scenario_label": "사무실 무증상 저산소",
+      "context": {
+        "vision_context": {
+          "person_count": 3,
+          "mask_rate": 0.67,
+          "crowding_level": "LOW"
+        },
+        "health_context": {
+          "heart_rate": 88,
+          "spo2": 91,
+          "body_temperature": 36.9,
+          "stress_index": 30
+        },
+        "environment_context": {
+          "temperature": 23.5,
+          "humidity": 44,
+          "pm25": 12,
+          "air_quality": "GOOD"
+        },
+        "facility_context": {
+          "facility_type": "office",
+          "label": "일반 사무실",
+          "sensitivity": "LOW",
+          "vulnerable_population": false
+        },
+        "timestamp": "2026-07-24T11:02:00+09:00"
+      },
+      "decision": {
+        "control_level": "HIGH",
+        "decision_source": "RULE_FLOOR",
+        "ml": {
+          "level": "LOW",
+          "confidence": 56,
+          "probabilities": {
+            "LOW": 0.557,
+            "MEDIUM": 0.4404,
+            "HIGH": 0.0026
+          },
+          "drivers": [
+            {
+              "feature": "spo2_deficit",
+              "label": "산소포화도 저하폭",
+              "value": 0.5,
+              "contribution": -2.843
+            },
+            {
+              "feature": "pm25_load",
+              "label": "미세먼지 부하",
+              "value": 0.08,
+              "contribution": 1.563
+            },
+            {
+              "feature": "fever",
+              "label": "체온 상승폭",
+              "value": 0.045,
+              "contribution": 1.531
+            },
+            {
+              "feature": "hr_excess",
+              "label": "심박수 상승폭",
+              "value": 0.0,
+              "contribution": 1.185
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "HIGH",
+          "ceiling_level": "HIGH",
+          "fired": [
+            {
+              "rule_id": "F1",
+              "kind": "FLOOR",
+              "level": "HIGH",
+              "name": "저산소증",
+              "message": "산소포화도 91%로 저산소 임계선(92%) 미만"
+            }
+          ]
+        },
+        "baseline_level": "HIGH",
+        "interpretation": "ML은 LOW로 추정했으나 안전 하한 규칙이 HIGH로 상향 고정한 상황",
+        "reasons": [
+          "산소포화도 91%로 저산소 임계선(92%) 미만",
+          "미세먼지 부하 0.08 → ML LOW 지지 (+1.56)"
+        ],
+        "actuation": {
+          "fan_level": 100,
+          "recirculation": "CLOSED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 9,
+          "air_shower": true,
+          "alert": "MANAGER"
+        }
+      }
+    },
+    {
+      "scenario_id": "S8",
+      "scenario_label": "사무실 점심시간 미착용 밀집",
+      "context": {
+        "vision_context": {
+          "person_count": 20,
+          "mask_rate": 0.25,
+          "crowding_level": "HIGH"
+        },
+        "health_context": {
+          "heart_rate": 84,
+          "spo2": 98,
+          "body_temperature": 36.7,
+          "stress_index": 41
+        },
+        "environment_context": {
+          "temperature": 27.5,
+          "humidity": 61,
+          "pm25": 41,
+          "air_quality": "MODERATE"
+        },
+        "facility_context": {
+          "facility_type": "office",
+          "label": "일반 사무실",
+          "sensitivity": "LOW",
+          "vulnerable_population": false
+        },
+        "timestamp": "2026-07-24T12:58:00+09:00"
+      },
+      "decision": {
+        "control_level": "MEDIUM",
+        "decision_source": "ML",
+        "ml": {
+          "level": "MEDIUM",
+          "confidence": 57,
+          "probabilities": {
+            "LOW": 0.0005,
+            "MEDIUM": 0.5727,
+            "HIGH": 0.4268
+          },
+          "drivers": [
+            {
+              "feature": "fever_x_vulnerable",
+              "label": "발열 x 취약계층",
+              "value": 0.0,
+              "contribution": 0.359
+            },
+            {
+              "feature": "unmasked_x_crowding",
+              "label": "미착용 x 밀집",
+              "value": 0.6,
+              "contribution": 0.345
+            },
+            {
+              "feature": "pm25_x_crowding",
+              "label": "미세먼지 x 밀집",
+              "value": 0.219,
+              "contribution": -0.258
+            },
+            {
+              "feature": "hr_x_sensitivity",
+              "label": "심박 상승 x 시설 민감도",
+              "value": 0.0,
+              "contribution": 0.244
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "MEDIUM",
+          "ceiling_level": "HIGH",
+          "fired": [
+            {
+              "rule_id": "F6",
+              "kind": "FLOOR",
+              "level": "MEDIUM",
+              "name": "밀집 상태 대기질 저하",
+              "message": "20명 밀집 + PM2.5 41㎍/㎥"
+            },
+            {
+              "rule_id": "F7",
+              "kind": "FLOOR",
+              "level": "MEDIUM",
+              "name": "미착용 밀집",
+              "message": "20명 중 마스크 착용률 25%"
+            }
+          ]
+        },
+        "baseline_level": "MEDIUM",
+        "interpretation": "일반 사무실에서 하나 이상의 주의 신호가 감지된 관찰 필요 상황",
+        "reasons": [
+          "미착용 x 밀집 0.60 → ML MEDIUM 지지 (+0.34)",
+          "20명 밀집 + PM2.5 41㎍/㎥",
+          "20명 중 마스크 착용률 25%"
+        ],
+        "actuation": {
+          "fan_level": 65,
+          "recirculation": "FILTERED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 5,
+          "air_shower": false,
+          "alert": "DASHBOARD"
+        }
+      }
+    },
+    {
+      "scenario_id": "S9",
+      "scenario_label": "어린이집 한가한 아침",
+      "context": {
+        "vision_context": {
+          "person_count": 3,
+          "mask_rate": 0.67,
+          "crowding_level": "LOW"
+        },
+        "health_context": {
+          "heart_rate": 92,
+          "spo2": 98,
+          "body_temperature": 36.6,
+          "stress_index": 28
+        },
+        "environment_context": {
+          "temperature": 23.0,
+          "humidity": 47,
+          "pm25": 15,
+          "air_quality": "GOOD"
+        },
+        "facility_context": {
+          "facility_type": "daycare",
+          "label": "어린이집",
+          "sensitivity": "HIGH",
+          "vulnerable_population": true
+        },
+        "timestamp": "2026-07-24T07:50:00+09:00"
+      },
+      "decision": {
+        "control_level": "LOW",
+        "decision_source": "RULE_CEILING",
+        "ml": {
+          "level": "MEDIUM",
+          "confidence": 53,
+          "probabilities": {
+            "LOW": 0.4698,
+            "MEDIUM": 0.5301,
+            "HIGH": 0.0001
+          },
+          "drivers": [
+            {
+              "feature": "fever_x_vulnerable",
+              "label": "발열 x 취약계층",
+              "value": 0.0,
+              "contribution": 0.359
+            },
+            {
+              "feature": "activity_plausible",
+              "label": "신체 활동으로 설명 가능한 심박 상승",
+              "value": 0.0,
+              "contribution": 0.192
+            },
+            {
+              "feature": "hr_excess",
+              "label": "심박수 상승폭",
+              "value": 0.033,
+              "contribution": -0.187
+            },
+            {
+              "feature": "hr_x_sensitivity",
+              "label": "심박 상승 x 시설 민감도",
+              "value": 0.033,
+              "contribution": 0.186
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "LOW",
+          "ceiling_level": "LOW",
+          "fired": [
+            {
+              "rule_id": "C2",
+              "kind": "CEILING",
+              "level": "LOW",
+              "name": "전 지표 정상",
+              "message": "생체·환경·혼잡 지표가 모두 정상 범위"
+            }
+          ]
+        },
+        "baseline_level": "LOW",
+        "interpretation": "ML은 MEDIUM로 추정했으나 어린이집 맥락상 과잉 제어로 판단해 LOW로 완화한 상황",
+        "reasons": [
+          "생체·환경·혼잡 지표가 모두 정상 범위"
+        ],
+        "actuation": {
+          "fan_level": 30,
+          "recirculation": "OPEN",
+          "uv_sterilizer": false,
+          "gate_hold_seconds": 2,
+          "air_shower": false,
+          "alert": "NONE"
+        }
+      }
+    },
+    {
+      "scenario_id": "S10",
+      "scenario_label": "헬스장 고강도 운동 직후",
+      "context": {
+        "vision_context": {
+          "person_count": 10,
+          "mask_rate": 0.2,
+          "crowding_level": "HIGH"
+        },
+        "health_context": {
+          "heart_rate": 165,
+          "spo2": 96,
+          "body_temperature": 37.4,
+          "stress_index": 92
+        },
+        "environment_context": {
+          "temperature": 29.0,
+          "humidity": 70,
+          "pm25": 30,
+          "air_quality": "MODERATE"
+        },
+        "facility_context": {
+          "facility_type": "gym",
+          "label": "헬스장",
+          "sensitivity": "LOW",
+          "vulnerable_population": false
+        },
+        "timestamp": "2026-07-24T20:15:00+09:00"
+      },
+      "decision": {
+        "control_level": "MEDIUM",
+        "decision_source": "RULE_CEILING",
+        "ml": {
+          "level": "HIGH",
+          "confidence": 99,
+          "probabilities": {
+            "LOW": 0.0,
+            "MEDIUM": 0.0094,
+            "HIGH": 0.9906
+          },
+          "drivers": [
+            {
+              "feature": "hr_excess",
+              "label": "심박수 상승폭",
+              "value": 1.0,
+              "contribution": 2.503
+            },
+            {
+              "feature": "stress",
+              "label": "스트레스 지수",
+              "value": 0.92,
+              "contribution": 1.375
+            },
+            {
+              "feature": "activity_plausible",
+              "label": "신체 활동으로 설명 가능한 심박 상승",
+              "value": 0.667,
+              "contribution": -1.002
+            },
+            {
+              "feature": "facility_sensitivity",
+              "label": "시설 민감도",
+              "value": 0.0,
+              "contribution": -0.956
+            }
+          ]
+        },
+        "rules": {
+          "floor_level": "LOW",
+          "ceiling_level": "MEDIUM",
+          "fired": [
+            {
+              "rule_id": "C1",
+              "kind": "CEILING",
+              "level": "MEDIUM",
+              "name": "신체 활동으로 설명 가능",
+              "message": "헬스장의 심박수 165 bpm은 산소·체온 정상으로 운동 후 반응 가능"
+            }
+          ]
+        },
+        "baseline_level": "HIGH",
+        "interpretation": "ML은 HIGH로 추정했으나 헬스장 맥락상 과잉 제어로 판단해 MEDIUM로 완화한 상황",
+        "reasons": [
+          "헬스장의 심박수 165 bpm은 산소·체온 정상으로 운동 후 반응 가능",
+          "심박수 상승폭 1.00 → ML HIGH 지지 (+2.50)",
+          "스트레스 지수 0.92 → ML HIGH 지지 (+1.38)"
+        ],
+        "actuation": {
+          "fan_level": 65,
+          "recirculation": "FILTERED",
+          "uv_sterilizer": true,
+          "gate_hold_seconds": 5,
+          "air_shower": false,
+          "alert": "DASHBOARD"
+        }
+      }
+    }
+  ]
+}

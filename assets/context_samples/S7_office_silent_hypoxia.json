@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S7",
+  "scenario_label": "사무실 무증상 저산소",
+  "notes": "혼잡·환경·체온이 모두 정상이라 ML 점수는 중간대에 머문다. 단일 생체 임계선만 위반한 상황.",
+  "timestamp": "2026-07-24T11:02:00+09:00",
+  "vision_context": {
+    "person_count": 3,
+    "mask_rate": 0.67,
+    "crowding_level": "LOW"
+  },
+  "health_context": {
+    "heart_rate": 88,
+    "spo2": 91,
+    "body_temperature": 36.9,
+    "stress_index": 30
+  },
+  "environment_context": {
+    "temperature": 23.5,
+    "humidity": 44,
+    "pm25": 12,
+    "air_quality": "GOOD"
+  },
+  "facility_context": {
+    "facility_type": "office",
+    "label": "일반 사무실",
+    "sensitivity": "LOW",
+    "vulnerable_population": false
+  }
+}

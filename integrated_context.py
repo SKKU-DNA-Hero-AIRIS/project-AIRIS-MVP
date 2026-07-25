@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from airis import analyze_context
+from airis import analyze_hybrid
 from airis.models import (
     EnvironmentContext,
     FacilityContext,
@@ -77,4 +77,4 @@ def analyze_live_context(
         environment,
         facility,
     )
-    return context, analyze_context(context)
+    return context, analyze_hybrid(context)

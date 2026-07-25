@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S4",
+  "scenario_label": "어린이집 발열 아동 출입",
+  "notes": "고감도 시설의 발열은 안전 규칙이 ML보다 우선한다.",
+  "timestamp": "2026-07-24T08:35:00+09:00",
+  "vision_context": {
+    "person_count": 6,
+    "mask_rate": 0.5,
+    "crowding_level": "MEDIUM"
+  },
+  "health_context": {
+    "heart_rate": 112,
+    "spo2": 97,
+    "body_temperature": 38.2,
+    "stress_index": 61
+  },
+  "environment_context": {
+    "temperature": 25.5,
+    "humidity": 52,
+    "pm25": 24,
+    "air_quality": "GOOD"
+  },
+  "facility_context": {
+    "facility_type": "daycare",
+    "label": "어린이집",
+    "sensitivity": "HIGH",
+    "vulnerable_population": true
+  }
+}

@@ -424,20 +424,36 @@ if input_mode == "통합 판단":
     control_level = integrated_result.control_level
 
     st.subheader("통합 제어")
-    risk_class = integrated_result.overall_risk.lower()
+    risk_class = control_level.lower()
     st.markdown(
         f"""
         <div class="risk-hero {risk_class}">
           <div class="risk-label">OVERALL RISK</div>
-          <div class="risk-value {risk_class}">{integrated_result.overall_risk}</div>
+          <div class="risk-value {risk_class}">{control_level}</div>
           <div class="risk-meta">
             최종 제어 <b>AIR GATE {control_level}</b>
-            &nbsp;·&nbsp; 신뢰도 <b>{integrated_result.confidence}%</b>
+            &nbsp;·&nbsp; ML 신뢰도 <b>{integrated_result.ml_confidence}%</b>
+            &nbsp;·&nbsp; 판단 <b>{integrated_result.decision_source}</b>
           </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    st.markdown("#### Actuation")
+    actuation = integrated_result.actuation
+    action_columns = st.columns(3)
+    action_columns[0].metric("FAN LEVEL", f"{actuation.fan_level}%")
+    action_columns[1].metric("RECIRCULATION", actuation.recirculation)
+    action_columns[2].metric("GATE HOLD", f"{actuation.gate_hold_seconds}초")
+
+    action_columns = st.columns(3)
+    action_columns[0].metric(
+        "UV STERILIZER",
+        "ON" if actuation.uv_sterilizer else "OFF",
+    )
+    action_columns[1].metric("AIR SHOWER", "ON" if actuation.air_shower else "OFF")
+    action_columns[2].metric("ALERT", actuation.alert)
 
     st.caption("실시간 입력")
     context_columns = st.columns(4)

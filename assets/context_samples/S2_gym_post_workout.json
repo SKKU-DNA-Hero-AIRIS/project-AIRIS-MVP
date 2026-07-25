@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S2",
+  "scenario_label": "헬스장 운동 직후 출입",
+  "notes": "S3와 생체 데이터가 완전히 동일하다. 시설 맥락만 다르다.",
+  "timestamp": "2026-07-24T19:40:00+09:00",
+  "vision_context": {
+    "person_count": 6,
+    "mask_rate": 0.33,
+    "crowding_level": "MEDIUM"
+  },
+  "health_context": {
+    "heart_rate": 138,
+    "spo2": 98,
+    "body_temperature": 37.1,
+    "stress_index": 74
+  },
+  "environment_context": {
+    "temperature": 26.5,
+    "humidity": 58,
+    "pm25": 21,
+    "air_quality": "GOOD"
+  },
+  "facility_context": {
+    "facility_type": "gym",
+    "label": "헬스장",
+    "sensitivity": "LOW",
+    "vulnerable_population": false
+  }
+}

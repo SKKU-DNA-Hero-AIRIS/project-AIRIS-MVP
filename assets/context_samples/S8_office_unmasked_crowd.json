@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S8",
+  "scenario_label": "사무실 점심시간 미착용 밀집",
+  "notes": "개인 생체 지표는 정상이지만 Vision 맥락이 집단 전파 위험을 시사한다.",
+  "timestamp": "2026-07-24T12:58:00+09:00",
+  "vision_context": {
+    "person_count": 20,
+    "mask_rate": 0.25,
+    "crowding_level": "HIGH"
+  },
+  "health_context": {
+    "heart_rate": 84,
+    "spo2": 98,
+    "body_temperature": 36.7,
+    "stress_index": 41
+  },
+  "environment_context": {
+    "temperature": 27.5,
+    "humidity": 61,
+    "pm25": 41,
+    "air_quality": "MODERATE"
+  },
+  "facility_context": {
+    "facility_type": "office",
+    "label": "일반 사무실",
+    "sensitivity": "LOW",
+    "vulnerable_population": false
+  }
+}
