@@ -236,19 +236,23 @@ def measure(df: pd.DataFrame, env: dict, masked: np.ndarray,
     crowd_pen = cfg.crowd_fail_coef * min(crowd_ratio, 1.5)
 
     # ---- 체온: 피부온을 재고 고정 오프셋으로 심부온 환산 ----
-    # 편향을 따로 더하지 않는다. 피부온이 이미 주변온도에 의존하는데
-    # 기기 오프셋은 ir_calibration_ambient 기준 고정이므로, 과대측정은
-    # 그 불일치에서 자동으로 발생한다. 별도로 더하면 이중 계산이다.
+    # 서로 다른 두 현상이 겹친다. 이중 계산이 아니다.
+    #   1) 생리: 더위·추위가 진짜 피부온을 바꾼다
+    #            → apply_environmental_physiology 에서 이미 반영됨
+    #   2) 측정: 기기의 심부온 환산식이 ir_calibration_ambient(22℃) 기준
+    #            고정이라, 주변온도가 다르면 환산 자체가 틀어진다
+    # (2)를 빠뜨리면 14~26℃ 구간에서 주변온도 효과가 완전히 사라진다.
+    # 생리 모델의 열/한랭 항이 그 구간에서 0이기 때문이다.
+    ambient_bias = cfg.ir_skin_ambient_sensitivity * (
+        env["temperature"] - cfg.ir_calibration_ambient)
     skin_true = df["skin_temperature"].to_numpy()
     temp_meas = (
         skin_true
         + cfg.ir_core_offset                      # 22℃ 기준으로 보정된 고정 오프셋
+        + ambient_bias                            # 환산식 기준과의 불일치
         + cfg.ir_mask_offset * masked
         + rng.normal(0, cfg.ir_noise_sd, n)
     )
-    # 진단용: 기기가 안고 있는 구조적 편향의 기대값
-    ambient_bias = cfg.ir_skin_ambient_sensitivity * (
-        env["temperature"] - cfg.ir_calibration_ambient)
     temp_fail = rng.random(n) < (cfg.ir_fail_base + 0.5 * crowd_pen)
     out["body_temperature"] = np.where(temp_fail, np.nan, np.round(temp_meas, 1))
 
@@ -591,6 +595,9 @@ def main() -> None:
     ap.add_argument("--outbreak", type=float, default=1.0,
                     help="감염 유행 배수 (예: 4.0)")
     ap.add_argument("-o", "--out", default="gate_records.jsonl")
+    ap.add_argument("--flat-csv", default=None,
+                    help="개인 단위로 평탄화한 CSV 도 함께 저장 "
+                         "(예: gate_persons_flat.csv). 측정 오차 분석용.")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
@@ -604,6 +611,11 @@ def main() -> None:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     n_persons = sum(len(r["persons"]) for r in recs)
     print(f"{len(recs):,} 레코드 / {n_persons:,} 명 → {args.out}")
+
+    if args.flat_csv:
+        flat = measurement_impact(recs)
+        flat.to_csv(args.flat_csv, index=False)
+        print(f"{len(flat):,} 행 → {args.flat_csv}")
 
 
 if __name__ == "__main__":

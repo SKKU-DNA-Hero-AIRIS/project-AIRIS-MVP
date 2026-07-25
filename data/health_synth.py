@@ -632,9 +632,19 @@ def generate(
 # =============================================================================
 
 # 상태 지속성: 대각 성분이 크다 = 상태가 쉽게 바뀌지 않는다
-def _transition_matrix(labels: list[State], persistence: float = 0.94) -> np.ndarray:
+def _transition_matrix(labels: list[State], persistence: float = 0.94,
+                       state_probs: dict[State, float] | None = None) -> np.ndarray:
+    """
+    상태 전이행렬. T = (1-persistence)·1·baseᵀ + persistence·I 형태이므로
+    정상분포가 정확히 base 가 된다.
+
+    base 를 DEFAULT_STATE_PROBS 로 고정하면 사용자가 지정한 state_probs 가
+    첫 시점에만 반영되고 이후 기본값으로 수렴해 버린다. 유행 시나리오처럼
+    유병률을 올려 생성할 때 시계열이 조용히 평시로 되돌아간다.
+    """
     n = len(labels)
-    base = np.array([DEFAULT_STATE_PROBS[s] for s in labels])
+    probs = state_probs or DEFAULT_STATE_PROBS
+    base = np.array([probs[s] for s in labels], dtype=float)
     base = base / base.sum()
     T = np.tile(base, (n, 1)) * (1 - persistence)
     np.fill_diagonal(T, np.diag(T) + persistence)
@@ -660,7 +670,7 @@ def generate_timeseries(
     rng = np.random.default_rng(seed)
     labels = list(cfg.state_probs.keys())
     label_vals = np.array([s.value for s in labels])
-    T = _transition_matrix(labels)
+    T = _transition_matrix(labels, state_probs=cfg.state_probs)
 
     p0 = np.array([cfg.state_probs[s] for s in labels], dtype=float)
     p0 = p0 / p0.sum()

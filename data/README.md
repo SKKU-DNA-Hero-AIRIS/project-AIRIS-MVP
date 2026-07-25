@@ -72,14 +72,18 @@ python health_synth.py --timeseries --subjects 300 --steps 96 -o vitals_ts.csv
 
 ```bash
 # 학교 · 평시
-python air_gate.py -f school -o gate_school_spring.jsonl
+python air_gate.py -f school -n 1200 -o gate_school_spring.jsonl
 
 # 병원 · 여름철 (주변온도 편향 +14)
-python air_gate.py -f hospital --season-bias 14 -o gate_hospital_summer.jsonl
+python air_gate.py -f hospital -n 1200 --season-bias 14 -o gate_hospital_summer.jsonl
 
-# 병원 · 감염 유행 (유병률 4배)
-python air_gate.py -f hospital --outbreak 4.0 -o gate_hospital_outbreak.jsonl
+# 병원 · 감염 유행 (유병률 4배) + 개인 단위 평탄화 CSV 동시 저장
+python air_gate.py -f hospital -n 1200 --outbreak 4.0 \
+    -o gate_hospital_outbreak.jsonl --flat-csv gate_persons_flat.csv
 ```
+
+`-n` 은 요청 레코드 수이며, 도착 강도가 시간대별로 달라 실제 산출 수는 조금 적다.
+`--flat-csv` 를 주면 `measurement_impact()` 결과가 CSV 로 함께 저장된다.
 
 ---
 
@@ -116,12 +120,16 @@ latent_state, is_abnormal, on_beta_blocker, is_elderly
 추운 환경), 비정상인데 정상처럼(베타차단제·고령자 발열 둔화).
 
 **고정 체온 임계값은 작동하지 않는다.** 주변온도 일주기 드리프트가 유행 신호보다
-크기 때문이다. `ambient_correction.py`의 실측 결과:
+크기 때문이다. `ambient_correction.py`의 실측 결과 (병원, `season_bias=0`, 각 n=3,269):
 
 | 방식 | 평시 → 유행 | 배수 | 판정 |
 |------|-------------|------|------|
-| 고정 임계값 37.5℃ | 0.619 → 0.691 | 1.12 | 탐지 불가 |
+| 고정 임계값 37.5℃ | 0.262 → 0.357 | 1.36 | 탐지 불가 |
 | 주변온도 잔차화 | 0.050 → 0.130 | **2.60** | 전 시간대 유의 |
+
+비교 대상은 **시간대 변화**다. 같은 평시 데이터에서 07시 0.115 → 14시 0.437로
+발동률이 +0.32 움직이는데, 유행이 만드는 변화는 +0.10에 불과하다.
+**언제 측정했는지가 유행 여부보다 판정을 더 좌우한다.**
 
 배포 시 평시 2~4주간 회귀계수를 학습하고 계절이 바뀌면 재학습한다.
 
