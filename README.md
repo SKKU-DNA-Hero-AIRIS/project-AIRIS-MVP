@@ -1016,9 +1016,11 @@ pip install -r requirements.txt
 streamlit run realtime_vision_app.py
 ```
 
-사이드바에서 MP4, MOV, AVI, MKV 파일을 직접 업로드할 수 있다. 사용 권한이
-있는 3분 이하 YouTube URL도 입력할 수 있으나, 발표 시에는 네트워크 장애를
-피하기 위해 파일 업로드 방식을 권장한다.
+사이드바에서 MP4, MOV, AVI, MKV 파일을 직접 업로드할 수 있다.
+
+입력 방식에서 `실시간 카메라`를 선택하면 브라우저 카메라 화면에
+사람·마스크 탐지 결과를 표시하고, 현재 `vision_context` JSON을 실시간으로
+갱신한다. `START` 버튼을 누른 뒤 브라우저의 카메라 접근을 허용해야 한다.
 
 분석 결과는 다음 표준 형식으로 제공된다.
 
