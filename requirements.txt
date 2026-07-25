@@ -1,5 +1,7 @@
 numpy>=1.26,<3
 streamlit>=1.36,<2
+folium>=0.18,<1
+streamlit-folium>=0.24,<1
 streamlit-webrtc>=0.63,<1
 streamlit-autorefresh>=1.0,<2
 av>=14,<15
@@ -7,3 +9,8 @@ imageio>=2.37,<3
 imageio-ffmpeg>=0.6,<1
 ultralytics>=8.3,<9
 huggingface-hub>=0.24,<1
+
+# 합성 데이터 생성 (data/)
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11

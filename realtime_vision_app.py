@@ -9,9 +9,26 @@ from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
+import folium
 from streamlit_autorefresh import st_autorefresh
+from streamlit_folium import st_folium
 from streamlit_webrtc import RTCConfiguration, WebRtcMode, webrtc_streamer
 
+from external_context import (
+    LOCATIONS,
+    build_facility_context,
+    fetch_external_context_by_coordinates,
+    read_latest_external_context,
+    reverse_geocode,
+)
+from integrated_context import analyze_live_context
+from live_context_store import (
+    read_facility_context,
+    read_vision_context,
+    write_facility_context,
+    write_vision_context,
+)
+from physiological_store import read_context, write_context
 from vision_demo import analyze_video
 from webcam_vision import LiveVisionState, WebcamVisionProcessor, load_webcam_models
 
@@ -36,17 +53,29 @@ st.markdown(
     [data-testid="stFileUploader"] {
       border:1px solid #243444; border-radius:12px; padding:.6rem;
     }
+    .risk-hero {
+      border:1px solid #2a3b4d;
+      border-radius:20px;
+      padding:28px 32px;
+      margin:.5rem 0 1.25rem;
+      background:linear-gradient(135deg, #101d29 0%, #0b151f 100%);
+    }
+    .risk-hero.high { border-color:#ef5350; box-shadow:0 0 32px #ef535024; }
+    .risk-hero.medium { border-color:#ffb547; box-shadow:0 0 32px #ffb5471f; }
+    .risk-hero.low { border-color:#37c98b; box-shadow:0 0 32px #37c98b1f; }
+    .risk-label { color:#91a4b5; font-size:13px; font-weight:700; letter-spacing:.16em; }
+    .risk-value { margin-top:4px; font-size:64px; font-weight:800; line-height:1; }
+    .risk-value.high { color:#ff6562; }
+    .risk-value.medium { color:#ffc263; }
+    .risk-value.low { color:#48d99d; }
+    .risk-meta { margin-top:14px; color:#c0ccd6; font-size:16px; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 st.caption("DNA-HERO · AIRIS MVP")
-st.title("Vision Context · Live Playback")
-st.write(
-    "업로드 영상 또는 노트북 카메라에서 현재 인원, 마스크 비율과 혼잡도를 "
-    "실시간으로 표시합니다."
-)
+st.title("AIRIS 실시간 모니터링")
 
 uploaded_file = None
 upload_clicked = False
@@ -55,7 +84,13 @@ with st.sidebar:
     st.header("입력 방식")
     input_mode = st.radio(
         "분석할 영상을 선택하세요",
-        ["영상 파일 업로드", "실시간 카메라"],
+        [
+            "영상 파일 업로드",
+            "실시간 카메라",
+            "생체 데이터",
+            "외부 환경",
+            "통합 판단",
+        ],
         label_visibility="collapsed",
     )
     if input_mode == "영상 파일 업로드":
@@ -71,8 +106,8 @@ with st.sidebar:
             use_container_width=True,
             disabled=uploaded_file is None,
         )
-    else:
-        st.caption("카메라 영상은 브라우저에서 직접 전송되며 저장하지 않습니다.")
+    elif input_mode == "실시간 카메라":
+        st.caption("카메라 영상은 저장하지 않습니다.")
 
 
 @st.cache_resource(show_spinner="사람·마스크 탐지 모델을 불러오는 중…")
@@ -135,6 +170,308 @@ if input_mode == "실시간 카메라":
     )
     st.stop()
 
+if input_mode == "생체 데이터":
+    st.subheader("생체 데이터")
+
+    physiological_role = st.radio(
+        "사용 화면",
+        ["데이터 전송", "실시간 모니터링"],
+        horizontal=True,
+    )
+
+    if physiological_role == "데이터 전송":
+        preset = st.selectbox("시나리오", ["정상", "운동 직후", "건강 이상"])
+        presets = {
+            "정상": (75, 98, 36.5, 20),
+            "운동 직후": (125, 98, 36.8, 70),
+            "건강 이상": (125, 94, 38.1, 85),
+        }
+        preset_hr, preset_spo2, preset_temp, preset_stress = presets[preset]
+
+        with st.form("iphone-physiological-sender"):
+            device_id = st.text_input("기기 이름", value="dongyeon_iphone")
+            heart_rate = st.slider("심박수 (bpm)", 30, 200, preset_hr)
+            spo2 = st.slider("산소포화도 (%)", 50, 100, preset_spo2)
+            body_temperature = st.slider(
+                "체온 (℃)",
+                30.0,
+                42.0,
+                preset_temp,
+                0.1,
+            )
+            stress_index = st.slider("스트레스 지수", 0, 100, preset_stress)
+            send_clicked = st.form_submit_button(
+                "전송",
+                type="primary",
+                use_container_width=True,
+            )
+
+        if send_clicked:
+            sent_context = write_context(
+                {
+                    "device_id": device_id,
+                    "heart_rate": heart_rate,
+                    "spo2": spo2,
+                    "body_temperature": body_temperature,
+                    "stress_index": stress_index,
+                }
+            )
+            st.success("전송 완료")
+            st.json({"physiological_context": sent_context})
+    else:
+        st_autorefresh(interval=1000, key="physiological-monitor-refresh")
+        physiological_context = read_context()
+        timestamp = physiological_context["timestamp"]
+
+        if timestamp is None:
+            st.warning("수신 대기 중")
+        else:
+            st.success(f"{physiological_context['device_id']} · {timestamp}")
+
+        physiological_metrics = st.columns(4)
+        physiological_metrics[0].metric(
+            "심박수",
+            f"{physiological_context['heart_rate']} bpm",
+        )
+        physiological_metrics[1].metric(
+            "산소포화도",
+            f"{physiological_context['spo2']}%",
+        )
+        physiological_metrics[2].metric(
+            "체온",
+            f"{physiological_context['body_temperature']:.1f}℃",
+        )
+        physiological_metrics[3].metric(
+            "스트레스",
+            f"{physiological_context['stress_index']} / 100",
+        )
+
+        health_high = (
+            physiological_context["spo2"] < 95
+            or physiological_context["body_temperature"] >= 38.0
+        )
+        health_medium = (
+            physiological_context["heart_rate"] >= 110
+            or physiological_context["stress_index"] >= 65
+        )
+        if health_high:
+            st.error("HEALTH RISK · HIGH")
+        elif health_medium:
+            st.warning("HEALTH RISK · MEDIUM")
+        else:
+            st.success("HEALTH RISK · LOW")
+
+        standardized_context = {
+            "timestamp": timestamp,
+            "physiological_context": {
+                key: physiological_context[key]
+                for key in (
+                    "heart_rate",
+                    "spo2",
+                    "body_temperature",
+                    "stress_index",
+                )
+            },
+        }
+        st.subheader("JSON")
+        st.json(standardized_context)
+
+    st.stop()
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_external_context(
+    latitude: float,
+    longitude: float,
+    location_name: str,
+):
+    return fetch_external_context_by_coordinates(
+        latitude,
+        longitude,
+        location_name,
+    )
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_place_info(latitude: float, longitude: float, cache_version: int = 2):
+    del cache_version
+    return reverse_geocode(latitude, longitude)
+
+
+if input_mode == "외부 환경":
+    st.subheader("외부 환경")
+    default_latitude, default_longitude = LOCATIONS["성균관대 자연과학캠퍼스"]
+    if "external_coordinates" not in st.session_state:
+        st.session_state["external_coordinates"] = {
+            "lat": default_latitude,
+            "lng": default_longitude,
+        }
+    coordinates = st.session_state["external_coordinates"]
+
+    location_map = folium.Map(
+        location=[coordinates["lat"], coordinates["lng"]],
+        zoom_start=16,
+        control_scale=True,
+    )
+    folium.Marker(
+        [coordinates["lat"], coordinates["lng"]],
+        tooltip="선택 위치",
+    ).add_to(location_map)
+    map_result = st_folium(
+        location_map,
+        height=420,
+        use_container_width=True,
+        returned_objects=["last_clicked"],
+        key="external-location-map",
+    )
+    clicked = map_result.get("last_clicked")
+    if clicked:
+        clicked_coordinates = {
+            "lat": round(float(clicked["lat"]), 6),
+            "lng": round(float(clicked["lng"]), 6),
+        }
+        if clicked_coordinates != coordinates:
+            st.session_state["external_coordinates"] = clicked_coordinates
+            coordinates = clicked_coordinates
+
+    place_info = get_place_info(coordinates["lat"], coordinates["lng"], 2)
+    inferred_facility = place_info["facility_type"]
+    facility_options = ["병원", "어린이집", "학교", "공공기관", "사무실", "기타"]
+    facility_type = st.selectbox(
+        "시설 유형",
+        facility_options,
+        index=facility_options.index(inferred_facility),
+        key=(
+            f"facility-{coordinates['lat']:.5f}-"
+            f"{coordinates['lng']:.5f}"
+        ),
+    )
+    vulnerable_population = st.checkbox(
+        "취약계층 이용 시설",
+        value=facility_type in {"병원", "어린이집"},
+        key=(
+            f"vulnerable-{coordinates['lat']:.5f}-"
+            f"{coordinates['lng']:.5f}"
+        ),
+    )
+    refresh_external = st.button("새로고침", use_container_width=True)
+
+    if refresh_external:
+        get_external_context.clear()
+
+    external_payload = get_external_context(
+        coordinates["lat"],
+        coordinates["lng"],
+        place_info["name"],
+    )
+    environment_context = external_payload["environment_context"]
+    facility_context = build_facility_context(
+        facility_type,
+        vulnerable_population,
+    )
+    write_facility_context(facility_context)
+
+    external_metrics = st.columns(5)
+    external_metrics[0].metric(
+        "기온",
+        f"{environment_context['temperature']:.1f}℃",
+    )
+    external_metrics[1].metric(
+        "습도",
+        f"{environment_context['humidity']}%",
+    )
+    external_metrics[2].metric(
+        "PM2.5",
+        f"{environment_context['pm25']:.1f}",
+    )
+    external_metrics[3].metric(
+        "강수량",
+        f"{environment_context['precipitation']:.1f} mm",
+    )
+    external_metrics[4].metric(
+        "대기질",
+        environment_context["air_quality"],
+    )
+
+    st.caption(
+        f"{place_info['display_name']} · {external_payload['timestamp']} · "
+        f"{external_payload['source']} · 지도 © OpenStreetMap"
+    )
+    st.subheader("JSON")
+    st.json(
+        {
+            "environment_context": environment_context,
+            "facility_context": facility_context,
+        }
+    )
+    st.stop()
+
+
+if input_mode == "통합 판단":
+    st_autorefresh(interval=1000, key="integrated-context-refresh")
+    latest_vision = read_vision_context()
+    latest_health = read_context()
+    latest_external = read_latest_external_context()
+    latest_environment = latest_external["environment_context"]
+    latest_facility = read_facility_context()
+
+    integrated_context, integrated_result = analyze_live_context(
+        latest_vision,
+        latest_health,
+        latest_environment,
+        latest_facility,
+    )
+    control_level = integrated_result.control_level
+
+    st.subheader("통합 제어")
+    risk_class = integrated_result.overall_risk.lower()
+    st.markdown(
+        f"""
+        <div class="risk-hero {risk_class}">
+          <div class="risk-label">OVERALL RISK</div>
+          <div class="risk-value {risk_class}">{integrated_result.overall_risk}</div>
+          <div class="risk-meta">
+            최종 제어 <b>AIR GATE {control_level}</b>
+            &nbsp;·&nbsp; 신뢰도 <b>{integrated_result.confidence}%</b>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.caption("실시간 입력")
+    context_columns = st.columns(4)
+    context_columns[0].metric(
+        "VISION",
+        f"{latest_vision['person_count']}명",
+        latest_vision["crowding_level"],
+        delta_color="off",
+    )
+    context_columns[1].metric(
+        "HEALTH",
+        f"{latest_health['body_temperature']:.1f}℃",
+        f"SpO₂ {latest_health['spo2']}%",
+        delta_color="off",
+    )
+    context_columns[2].metric(
+        "ENVIRONMENT",
+        f"PM2.5 {latest_environment['pm25']:.1f}",
+        latest_environment["air_quality"],
+        delta_color="off",
+    )
+    context_columns[3].metric(
+        "FACILITY",
+        latest_facility["facility_type"],
+        latest_facility["risk_level"],
+        delta_color="off",
+    )
+
+    if integrated_result.reasons:
+        st.markdown("#### 판단 근거")
+        st.write(" · ".join(integrated_result.reasons))
+    st.stop()
+
+
 if upload_clicked and uploaded_file is not None:
     try:
         file_bytes = uploaded_file.getvalue()
@@ -173,6 +510,7 @@ if not active_video.exists() or not active_result.exists():
 st.subheader(st.session_state.get("video_title", "Firefly 카페 데모"))
 
 payload = json.loads(active_result.read_text(encoding="utf-8"))
+write_vision_context(payload["vision_context"])
 timeline = payload["timeline"]
 video_base64 = base64.b64encode(active_video.read_bytes()).decode("ascii")
 
