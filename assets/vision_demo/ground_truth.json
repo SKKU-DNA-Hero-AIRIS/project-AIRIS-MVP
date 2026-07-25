@@ -1,0 +1,22 @@
+{
+  "asset": "sequential_entry_8_people_4_masks.mp4",
+  "synthetic": true,
+  "intended_use": "pipeline_demo_only",
+  "vision_context": {
+    "person_count": 8,
+    "masked_person_count": 4,
+    "mask_rate": 0.5,
+    "crowding_level": "HIGH"
+  },
+  "sequence": {
+    "description": "빈 출입구에서 8명이 약 1.55초 간격으로 한 명씩 부드럽게 진입",
+    "final_state_starts_approximately_at_seconds": 14.9,
+    "duration_seconds": 18,
+    "fps": 30
+  },
+  "crowding_thresholds": {
+    "LOW": "person_count < 4",
+    "MEDIUM": "4 <= person_count < 8",
+    "HIGH": "person_count >= 8"
+  }
+}
