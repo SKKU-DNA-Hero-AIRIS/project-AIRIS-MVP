@@ -25,8 +25,12 @@ class IntegratedContextTests(unittest.TestCase):
                 "vulnerable_population": True,
             },
         )
-        self.assertEqual(result.overall_risk, "HIGH")
         self.assertEqual(result.control_level, "HIGH")
+        self.assertEqual(result.actuation.fan_level, 100)
+        self.assertEqual(result.actuation.recirculation, "CLOSED")
+        self.assertTrue(result.actuation.uv_sterilizer)
+        self.assertTrue(result.actuation.air_shower)
+        self.assertEqual(result.actuation.alert, "MANAGER")
 
     def test_normal_context_produces_low_control(self):
         _, result = analyze_live_context(
@@ -50,6 +54,11 @@ class IntegratedContextTests(unittest.TestCase):
             },
         )
         self.assertEqual(result.control_level, "LOW")
+        self.assertEqual(result.actuation.fan_level, 30)
+        self.assertEqual(result.actuation.recirculation, "OPEN")
+        self.assertFalse(result.actuation.uv_sterilizer)
+        self.assertFalse(result.actuation.air_shower)
+        self.assertEqual(result.actuation.alert, "NONE")
 
 
 if __name__ == "__main__":
