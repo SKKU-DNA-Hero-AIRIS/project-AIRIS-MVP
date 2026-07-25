@@ -8,3 +8,8 @@ imageio>=2.37,<3
 imageio-ffmpeg>=0.6,<1
 ultralytics>=8.3,<9
 huggingface-hub>=0.24,<1
+
+# 합성 데이터 생성 (data/)
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11

@@ -8,3 +8,7 @@ outputs/
 inputs/youtube/
 inputs/uploads/
 tools/bin/
+
+# synthetic data outputs (regenerate via data/README.md)
+data/*.jsonl
+data/*.csv
