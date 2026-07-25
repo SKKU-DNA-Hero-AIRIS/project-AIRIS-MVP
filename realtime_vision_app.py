@@ -9,9 +9,18 @@ from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
+import folium
 from streamlit_autorefresh import st_autorefresh
+from streamlit_folium import st_folium
 from streamlit_webrtc import RTCConfiguration, WebRtcMode, webrtc_streamer
 
+from external_context import (
+    LOCATIONS,
+    build_facility_context,
+    fetch_external_context_by_coordinates,
+    reverse_geocode,
+)
+from physiological_store import read_context, write_context
 from vision_demo import analyze_video
 from webcam_vision import LiveVisionState, WebcamVisionProcessor, load_webcam_models
 
@@ -42,11 +51,7 @@ st.markdown(
 )
 
 st.caption("DNA-HERO · AIRIS MVP")
-st.title("Vision Context · Live Playback")
-st.write(
-    "업로드 영상 또는 노트북 카메라에서 현재 인원, 마스크 비율과 혼잡도를 "
-    "실시간으로 표시합니다."
-)
+st.title("AIRIS 실시간 모니터링")
 
 uploaded_file = None
 upload_clicked = False
@@ -55,7 +60,7 @@ with st.sidebar:
     st.header("입력 방식")
     input_mode = st.radio(
         "분석할 영상을 선택하세요",
-        ["영상 파일 업로드", "실시간 카메라"],
+        ["영상 파일 업로드", "실시간 카메라", "생체 데이터", "외부 환경"],
         label_visibility="collapsed",
     )
     if input_mode == "영상 파일 업로드":
@@ -71,8 +76,8 @@ with st.sidebar:
             use_container_width=True,
             disabled=uploaded_file is None,
         )
-    else:
-        st.caption("카메라 영상은 브라우저에서 직접 전송되며 저장하지 않습니다.")
+    elif input_mode == "실시간 카메라":
+        st.caption("카메라 영상은 저장하지 않습니다.")
 
 
 @st.cache_resource(show_spinner="사람·마스크 탐지 모델을 불러오는 중…")
@@ -134,6 +139,242 @@ if input_mode == "실시간 카메라":
         "성능 최적화를 위해 사람은 매 6프레임, 마스크는 매 18프레임마다 분석합니다."
     )
     st.stop()
+
+if input_mode == "생체 데이터":
+    st.subheader("생체 데이터")
+
+    physiological_role = st.radio(
+        "사용 화면",
+        ["데이터 전송", "실시간 모니터링"],
+        horizontal=True,
+    )
+
+    if physiological_role == "데이터 전송":
+        preset = st.selectbox("시나리오", ["정상", "운동 직후", "건강 이상"])
+        presets = {
+            "정상": (75, 98, 36.5, 20),
+            "운동 직후": (125, 98, 36.8, 70),
+            "건강 이상": (125, 94, 38.1, 85),
+        }
+        preset_hr, preset_spo2, preset_temp, preset_stress = presets[preset]
+
+        with st.form("iphone-physiological-sender"):
+            device_id = st.text_input("기기 이름", value="dongyeon_iphone")
+            heart_rate = st.slider("심박수 (bpm)", 30, 200, preset_hr)
+            spo2 = st.slider("산소포화도 (%)", 50, 100, preset_spo2)
+            body_temperature = st.slider(
+                "체온 (℃)",
+                30.0,
+                42.0,
+                preset_temp,
+                0.1,
+            )
+            stress_index = st.slider("스트레스 지수", 0, 100, preset_stress)
+            send_clicked = st.form_submit_button(
+                "전송",
+                type="primary",
+                use_container_width=True,
+            )
+
+        if send_clicked:
+            sent_context = write_context(
+                {
+                    "device_id": device_id,
+                    "heart_rate": heart_rate,
+                    "spo2": spo2,
+                    "body_temperature": body_temperature,
+                    "stress_index": stress_index,
+                }
+            )
+            st.success("전송 완료")
+            st.json({"physiological_context": sent_context})
+    else:
+        st_autorefresh(interval=1000, key="physiological-monitor-refresh")
+        physiological_context = read_context()
+        timestamp = physiological_context["timestamp"]
+
+        if timestamp is None:
+            st.warning("수신 대기 중")
+        else:
+            st.success(f"{physiological_context['device_id']} · {timestamp}")
+
+        physiological_metrics = st.columns(4)
+        physiological_metrics[0].metric(
+            "심박수",
+            f"{physiological_context['heart_rate']} bpm",
+        )
+        physiological_metrics[1].metric(
+            "산소포화도",
+            f"{physiological_context['spo2']}%",
+        )
+        physiological_metrics[2].metric(
+            "체온",
+            f"{physiological_context['body_temperature']:.1f}℃",
+        )
+        physiological_metrics[3].metric(
+            "스트레스",
+            f"{physiological_context['stress_index']} / 100",
+        )
+
+        health_high = (
+            physiological_context["spo2"] < 95
+            or physiological_context["body_temperature"] >= 38.0
+        )
+        health_medium = (
+            physiological_context["heart_rate"] >= 110
+            or physiological_context["stress_index"] >= 65
+        )
+        if health_high:
+            st.error("HEALTH RISK · HIGH")
+        elif health_medium:
+            st.warning("HEALTH RISK · MEDIUM")
+        else:
+            st.success("HEALTH RISK · LOW")
+
+        standardized_context = {
+            "timestamp": timestamp,
+            "physiological_context": {
+                key: physiological_context[key]
+                for key in (
+                    "heart_rate",
+                    "spo2",
+                    "body_temperature",
+                    "stress_index",
+                )
+            },
+        }
+        st.subheader("JSON")
+        st.json(standardized_context)
+
+    st.stop()
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_external_context(
+    latitude: float,
+    longitude: float,
+    location_name: str,
+):
+    return fetch_external_context_by_coordinates(
+        latitude,
+        longitude,
+        location_name,
+    )
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_place_info(latitude: float, longitude: float, cache_version: int = 2):
+    del cache_version
+    return reverse_geocode(latitude, longitude)
+
+
+if input_mode == "외부 환경":
+    st.subheader("외부 환경")
+    default_latitude, default_longitude = LOCATIONS["성균관대 자연과학캠퍼스"]
+    if "external_coordinates" not in st.session_state:
+        st.session_state["external_coordinates"] = {
+            "lat": default_latitude,
+            "lng": default_longitude,
+        }
+    coordinates = st.session_state["external_coordinates"]
+
+    location_map = folium.Map(
+        location=[coordinates["lat"], coordinates["lng"]],
+        zoom_start=16,
+        control_scale=True,
+    )
+    folium.Marker(
+        [coordinates["lat"], coordinates["lng"]],
+        tooltip="선택 위치",
+    ).add_to(location_map)
+    map_result = st_folium(
+        location_map,
+        height=420,
+        use_container_width=True,
+        returned_objects=["last_clicked"],
+        key="external-location-map",
+    )
+    clicked = map_result.get("last_clicked")
+    if clicked:
+        clicked_coordinates = {
+            "lat": round(float(clicked["lat"]), 6),
+            "lng": round(float(clicked["lng"]), 6),
+        }
+        if clicked_coordinates != coordinates:
+            st.session_state["external_coordinates"] = clicked_coordinates
+            coordinates = clicked_coordinates
+
+    place_info = get_place_info(coordinates["lat"], coordinates["lng"], 2)
+    inferred_facility = place_info["facility_type"]
+    facility_options = ["병원", "어린이집", "학교", "공공기관", "사무실", "기타"]
+    facility_type = st.selectbox(
+        "시설 유형",
+        facility_options,
+        index=facility_options.index(inferred_facility),
+        key=(
+            f"facility-{coordinates['lat']:.5f}-"
+            f"{coordinates['lng']:.5f}"
+        ),
+    )
+    vulnerable_population = st.checkbox(
+        "취약계층 이용 시설",
+        value=facility_type in {"병원", "어린이집"},
+        key=(
+            f"vulnerable-{coordinates['lat']:.5f}-"
+            f"{coordinates['lng']:.5f}"
+        ),
+    )
+    refresh_external = st.button("새로고침", use_container_width=True)
+
+    if refresh_external:
+        get_external_context.clear()
+
+    external_payload = get_external_context(
+        coordinates["lat"],
+        coordinates["lng"],
+        place_info["name"],
+    )
+    environment_context = external_payload["environment_context"]
+    facility_context = build_facility_context(
+        facility_type,
+        vulnerable_population,
+    )
+
+    external_metrics = st.columns(5)
+    external_metrics[0].metric(
+        "기온",
+        f"{environment_context['temperature']:.1f}℃",
+    )
+    external_metrics[1].metric(
+        "습도",
+        f"{environment_context['humidity']}%",
+    )
+    external_metrics[2].metric(
+        "PM2.5",
+        f"{environment_context['pm25']:.1f}",
+    )
+    external_metrics[3].metric(
+        "강수량",
+        f"{environment_context['precipitation']:.1f} mm",
+    )
+    external_metrics[4].metric(
+        "대기질",
+        environment_context["air_quality"],
+    )
+
+    st.caption(
+        f"{place_info['display_name']} · {external_payload['timestamp']} · "
+        f"{external_payload['source']} · 지도 © OpenStreetMap"
+    )
+    st.subheader("JSON")
+    st.json(
+        {
+            "environment_context": environment_context,
+            "facility_context": facility_context,
+        }
+    )
+    st.stop()
+
 
 if upload_clicked and uploaded_file is not None:
     try:
