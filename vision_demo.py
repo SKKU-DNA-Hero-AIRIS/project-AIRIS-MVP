@@ -101,6 +101,7 @@ def detect_masks_in_people(
     people: list[tuple[int, int, int, int, float]],
     model: YOLO,
     confidence: float,
+    image_size: int = 384,
 ) -> list[tuple[int, int, int, int, float]]:
     """Detect masks on enlarged upper-body crops and map boxes to the frame."""
     height, width = frame.shape[:2]
@@ -124,7 +125,7 @@ def detect_masks_in_people(
     results = model.predict(
         crops,
         conf=confidence,
-        imgsz=384,
+        imgsz=image_size,
         verbose=False,
     )
     masks: list[tuple[int, int, int, int, float]] = []

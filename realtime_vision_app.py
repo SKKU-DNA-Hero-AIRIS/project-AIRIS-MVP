@@ -9,9 +9,11 @@ from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit_autorefresh import st_autorefresh
+from streamlit_webrtc import RTCConfiguration, WebRtcMode, webrtc_streamer
 
 from vision_demo import analyze_video
-from youtube_input import download_youtube_video
+from webcam_vision import LiveVisionState, WebcamVisionProcessor, load_webcam_models
 
 
 ROOT = Path(__file__).resolve().parent
@@ -42,67 +44,96 @@ st.markdown(
 st.caption("DNA-HERO · AIRIS MVP")
 st.title("Vision Context · Live Playback")
 st.write(
-    "영상 재생 위치와 동기화하여 현재 인원, 마스크 비율과 혼잡도를 표시합니다. "
-    "재생바를 움직여도 데이터가 해당 시점으로 즉시 변경됩니다."
+    "업로드 영상 또는 노트북 카메라에서 현재 인원, 마스크 비율과 혼잡도를 "
+    "실시간으로 표시합니다."
 )
 
-with st.sidebar:
-    st.header("YouTube 입력")
-    youtube_url = st.text_input(
-        "YouTube URL",
-        placeholder="https://youtu.be/...",
-        help="3분 이하의 공개 영상만 지원합니다.",
-    )
-    has_permission = st.checkbox(
-        "연구·다운로드 사용 권한을 확인했습니다",
-        help="본인 영상 또는 사용 허가가 있는 영상만 입력하세요.",
-    )
-    analyze_clicked = st.button(
-        "다운로드 후 분석",
-        type="primary",
-        use_container_width=True,
-    )
-    st.caption("첫 분석에는 모델 실행 때문에 몇 분이 걸릴 수 있습니다.")
-    st.divider()
-    st.header("파일 업로드")
-    uploaded_file = st.file_uploader(
-        "영상 파일",
-        type=["mp4", "mov", "avi", "mkv"],
-        help="MP4, MOV, AVI, MKV 형식을 지원합니다.",
-    )
-    upload_clicked = st.button(
-        "업로드 영상 분석",
-        use_container_width=True,
-        disabled=uploaded_file is None,
-    )
+uploaded_file = None
+upload_clicked = False
 
-if analyze_clicked:
-    if not youtube_url.strip():
-        st.sidebar.error("YouTube URL을 입력하세요.")
-    elif not has_permission:
-        st.sidebar.error("영상 사용 권한 확인이 필요합니다.")
+with st.sidebar:
+    st.header("입력 방식")
+    input_mode = st.radio(
+        "분석할 영상을 선택하세요",
+        ["영상 파일 업로드", "실시간 카메라"],
+        label_visibility="collapsed",
+    )
+    if input_mode == "영상 파일 업로드":
+        st.divider()
+        st.header("파일 업로드")
+        uploaded_file = st.file_uploader(
+            "영상 파일",
+            type=["mp4", "mov", "avi", "mkv"],
+            help="MP4, MOV, AVI, MKV 형식을 지원합니다.",
+        )
+        upload_clicked = st.button(
+            "업로드 영상 분석",
+            use_container_width=True,
+            disabled=uploaded_file is None,
+        )
     else:
-        try:
-            with st.spinner("YouTube 영상을 준비하고 Vision Context를 분석하는 중…"):
-                source_path, video_info = download_youtube_video(
-                    youtube_url.strip(),
-                    ROOT / "inputs/youtube",
-                )
-                result_dir = ROOT / "outputs/youtube" / video_info["id"]
-                result_path = result_dir / "vision_context.json"
-                annotated_path = result_dir / "annotated.mp4"
-                if not result_path.exists() or not annotated_path.exists():
-                    analyze_video(
-                        source_path,
-                        result_dir,
-                        sample_every=15,
-                    )
-                st.session_state["active_video"] = str(annotated_path)
-                st.session_state["active_result"] = str(result_path)
-                st.session_state["video_title"] = video_info["title"]
-            st.sidebar.success("분석 완료")
-        except Exception as error:
-            st.sidebar.error(f"분석 실패: {error}")
+        st.caption("카메라 영상은 브라우저에서 직접 전송되며 저장하지 않습니다.")
+
+
+@st.cache_resource(show_spinner="사람·마스크 탐지 모델을 불러오는 중…")
+def get_webcam_models():
+    return load_webcam_models()
+
+
+if input_mode == "실시간 카메라":
+    st.subheader("실시간 카메라")
+    st.info("아래 `START`를 누르고 브라우저의 카메라 접근을 허용하세요.")
+
+    if "live_vision_state" not in st.session_state:
+        st.session_state["live_vision_state"] = LiveVisionState()
+    live_state = st.session_state["live_vision_state"]
+    person_model, mask_model = get_webcam_models()
+
+    video_column, context_column = st.columns([1.55, 0.75], gap="large")
+    with video_column:
+        webcam_context = webrtc_streamer(
+            key="airis-live-webcam",
+            mode=WebRtcMode.SENDRECV,
+            rtc_configuration=RTCConfiguration(
+                {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+            ),
+            media_stream_constraints={
+                "video": {
+                    "width": {"ideal": 640},
+                    "height": {"ideal": 480},
+                    "frameRate": {"ideal": 15, "max": 20},
+                },
+                "audio": False,
+            },
+            video_processor_factory=lambda: WebcamVisionProcessor(
+                live_state,
+                person_model,
+                mask_model,
+            ),
+            async_processing=True,
+        )
+
+    if webcam_context.state.playing:
+        st_autorefresh(interval=1000, key="webcam-json-refresh")
+
+    live_payload = live_state.snapshot()
+    vision_context = live_payload["vision_context"]
+    with context_column:
+        st.caption("CURRENT VISION CONTEXT")
+        metric_left, metric_right = st.columns(2)
+        metric_left.metric("PERSON COUNT", vision_context["person_count"])
+        metric_right.metric(
+            "MASK RATE",
+            f"{round(vision_context['mask_rate'] * 100)}%",
+        )
+        st.metric("CROWDING LEVEL", vision_context["crowding_level"])
+        st.json(live_payload)
+
+    st.caption(
+        "LOW: 0~3명 · MEDIUM: 4~7명 · HIGH: 8명 이상 · "
+        "성능 최적화를 위해 사람은 매 6프레임, 마스크는 매 18프레임마다 분석합니다."
+    )
+    st.stop()
 
 if upload_clicked and uploaded_file is not None:
     try:
