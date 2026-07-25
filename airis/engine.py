@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 
-from .models import MultimodalContext
-
-
-LEVEL_SCORE = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
+from .models import LEVEL_SCORE, MultimodalContext
 
 
 @dataclass(frozen=True)

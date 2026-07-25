@@ -494,6 +494,34 @@ Decision
 Control
 ```
 
+## 구현된 하이브리드 판단 계층
+
+위 개념을 실제로 구현한 결과물이 `airis/` 패키지에 있다. ML이 연속적인 위험도 판단을 담당하고, 규칙이 그 출력의 상·하한을 강제하는 구조다.
+
+```text
+Context JSON
+     ↓
+Feature Extraction (16개 정규화 맥락 신호)
+     ↓
+ML Policy (Softmax Regression) ──┐
+                                 ├─→ Arbitration: max(min(ML, ceiling), floor)
+Rule Layer (FLOOR 7 / CEILING 2) ┘        ↓
+                                    Actuation Setpoints
+```
+
+| 문서 | 내용 |
+| --- | --- |
+| [docs/CONTROL_LOGIC.md](docs/CONTROL_LOGIC.md) | 판단 계층 설계 — 특징 정의, 모델 선택 근거, 규칙 테이블, 중재 순서, 학습 데이터의 한계 |
+| [docs/SCENARIO_PLAYBOOK.md](docs/SCENARIO_PLAYBOOK.md) | 10개 맥락 시나리오 실행 결과 및 연구 질문 대응 |
+
+홀드아웃 2,000건 기준 루브릭 재현율은 고정 규칙 70.1%, ML 95.1%이며 규칙 개입률은 7.75%다.
+
+```bash
+python tools/train_control_model.py   # 정책 재학습 → assets/policy/control_policy.json
+python tools/run_scenarios.py         # 시나리오 실행 → assets/reports/scenario_decisions.json
+python -m unittest discover -s tests
+```
+
 ---
 
 # 10. Core Demonstration Scenario

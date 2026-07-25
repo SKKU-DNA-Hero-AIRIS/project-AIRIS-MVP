@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S10",
+  "scenario_label": "헬스장 고강도 운동 직후",
+  "notes": "심박·스트레스·온습도가 동시에 높아 ML은 HIGH를 예측한다. 시설 맥락 기반 상한 규칙이 과잉 제어를 억제한다.",
+  "timestamp": "2026-07-24T20:15:00+09:00",
+  "vision_context": {
+    "person_count": 10,
+    "mask_rate": 0.2,
+    "crowding_level": "HIGH"
+  },
+  "health_context": {
+    "heart_rate": 165,
+    "spo2": 96,
+    "body_temperature": 37.4,
+    "stress_index": 92
+  },
+  "environment_context": {
+    "temperature": 29.0,
+    "humidity": 70,
+    "pm25": 30,
+    "air_quality": "MODERATE"
+  },
+  "facility_context": {
+    "facility_type": "gym",
+    "label": "헬스장",
+    "sensitivity": "LOW",
+    "vulnerable_population": false
+  }
+}

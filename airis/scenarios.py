@@ -1,4 +1,7 @@
+import json
 from copy import deepcopy
+from pathlib import Path
+from typing import Any
 
 from .models import (
     EnvironmentContext,
@@ -88,7 +91,15 @@ FACILITIES = {
         "sensitivity": "MEDIUM",
         "vulnerable_population": False,
     },
+    "헬스장": {
+        "facility_type": "gym",
+        "label": "헬스장",
+        "sensitivity": "LOW",
+        "vulnerable_population": False,
+    },
 }
+
+CONTEXT_SAMPLE_DIR = Path(__file__).resolve().parent.parent / "assets" / "context_samples"
 
 
 def build_context(
@@ -106,3 +117,15 @@ def build_context(
         vision_context=VisionContext(**deepcopy(VISION_SCENARIOS[vision_scenario])),
         facility_context=FacilityContext(**deepcopy(FACILITIES[facility])),
     )
+
+
+def load_context_samples(
+    directory: Path = CONTEXT_SAMPLE_DIR,
+) -> list[tuple[dict[str, Any], MultimodalContext]]:
+    """Load the committed context JSON samples with their scenario metadata."""
+    samples = []
+    for path in sorted(directory.glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        samples.append((payload, MultimodalContext.from_dict(payload)))
+    samples.sort(key=lambda item: int(item[0]["scenario_id"].lstrip("S")))
+    return samples

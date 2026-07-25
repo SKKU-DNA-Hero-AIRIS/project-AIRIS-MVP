@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S3",
+  "scenario_label": "병원 로비 출입 (S2와 동일 생체 데이터)",
+  "notes": "health_context가 S2와 바이트 단위로 동일하다. 제어 결과가 달라져야 한다.",
+  "timestamp": "2026-07-24T19:40:00+09:00",
+  "vision_context": {
+    "person_count": 6,
+    "mask_rate": 0.33,
+    "crowding_level": "MEDIUM"
+  },
+  "health_context": {
+    "heart_rate": 138,
+    "spo2": 98,
+    "body_temperature": 37.1,
+    "stress_index": 74
+  },
+  "environment_context": {
+    "temperature": 26.5,
+    "humidity": 58,
+    "pm25": 21,
+    "air_quality": "GOOD"
+  },
+  "facility_context": {
+    "facility_type": "hospital",
+    "label": "병원",
+    "sensitivity": "HIGH",
+    "vulnerable_population": true
+  }
+}

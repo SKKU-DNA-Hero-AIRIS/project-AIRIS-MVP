@@ -1,0 +1,188 @@
+{
+  "model": "multinomial_softmax_regression",
+  "trained_at": "2026-07-25T06:04:36+00:00",
+  "seed": 20260724,
+  "classes": [
+    "LOW",
+    "MEDIUM",
+    "HIGH"
+  ],
+  "feature_names": [
+    "hr_excess",
+    "spo2_deficit",
+    "fever",
+    "stress",
+    "pm25_load",
+    "thermal_load",
+    "humidity_load",
+    "crowding",
+    "unmasked_rate",
+    "facility_sensitivity",
+    "vulnerable_population",
+    "hr_x_sensitivity",
+    "fever_x_vulnerable",
+    "pm25_x_crowding",
+    "unmasked_x_crowding",
+    "activity_plausible"
+  ],
+  "standardization": {
+    "mean": [
+      0.279911,
+      0.142694,
+      0.229394,
+      0.52065,
+      0.284509,
+      0.284695,
+      0.3877,
+      0.2722,
+      0.553334,
+      0.50375,
+      0.502833,
+      0.140768,
+      0.118023,
+      0.077459,
+      0.13633,
+      0.076812
+    ],
+    "scale": [
+      0.312241,
+      0.242134,
+      0.307664,
+      0.241395,
+      0.278248,
+      0.293221,
+      0.317051,
+      0.279315,
+      0.253601,
+      0.407465,
+      0.499992,
+      0.231236,
+      0.24996,
+      0.131634,
+      0.161846,
+      0.162283
+    ]
+  },
+  "weights": [
+    [
+      -1.322234,
+      -1.92694,
+      -2.560593,
+      -0.89463,
+      -2.125899,
+      -1.161466,
+      -0.788575,
+      -1.748966,
+      -0.320189,
+      -0.887831,
+      -0.413406,
+      -1.05652,
+      -0.217681,
+      -0.460579,
+      -0.469534,
+      0.681094
+    ],
+    [
+      0.236764,
+      -0.311517,
+      -0.237045,
+      0.063438,
+      0.260745,
+      -0.059163,
+      0.047026,
+      -0.036047,
+      -0.002659,
+      0.114527,
+      0.116381,
+      -0.401239,
+      -0.759947,
+      -0.240768,
+      0.120556,
+      -0.40531
+    ],
+    [
+      1.08547,
+      2.238457,
+      2.797638,
+      0.831192,
+      1.865154,
+      1.220629,
+      0.741549,
+      1.785013,
+      0.322848,
+      0.773304,
+      0.297025,
+      1.457758,
+      0.977628,
+      0.701347,
+      0.348978,
+      -0.275785
+    ]
+  ],
+  "bias": [
+    -5.965955,
+    1.792856,
+    4.173098
+  ],
+  "metrics": {
+    "train_size": 6000,
+    "holdout_size": 2000,
+    "train_class_distribution": {
+      "LOW": 847,
+      "MEDIUM": 1916,
+      "HIGH": 3237
+    },
+    "reference": "expert rubric (airis.dataset.RUBRIC_WEIGHTS), noise-free",
+    "ml_rubric_fidelity": 0.951,
+    "ml_macro_f1": 0.9501,
+    "hybrid_rubric_fidelity": 0.8925,
+    "flat_baseline_fidelity": 0.701,
+    "flat_baseline_macro_f1": 0.6678,
+    "rule_intervention_rate": 0.0775,
+    "floor_raise_rate": 0.035,
+    "ceiling_damp_rate": 0.0425,
+    "ml_below_reference_rate": 0.024,
+    "hybrid_below_reference_rate": 0.057,
+    "confusion_matrix": {
+      "order": [
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+      ],
+      "ml": [
+        [
+          269,
+          15,
+          0
+        ],
+        [
+          7,
+          607,
+          35
+        ],
+        [
+          0,
+          41,
+          1026
+        ]
+      ],
+      "hybrid": [
+        [
+          276,
+          8,
+          0
+        ],
+        [
+          49,
+          507,
+          93
+        ],
+        [
+          0,
+          65,
+          1002
+        ]
+      ]
+    }
+  }
+}

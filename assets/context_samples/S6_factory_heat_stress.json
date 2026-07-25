@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S6",
+  "scenario_label": "공장 고온다습 작업 후 출입",
+  "notes": "노동 부하와 온열 환경이 겹친 경계 사례. ML의 연속적 판단이 필요하다.",
+  "timestamp": "2026-07-24T14:20:00+09:00",
+  "vision_context": {
+    "person_count": 7,
+    "mask_rate": 0.57,
+    "crowding_level": "MEDIUM"
+  },
+  "health_context": {
+    "heart_rate": 121,
+    "spo2": 96,
+    "body_temperature": 37.6,
+    "stress_index": 84
+  },
+  "environment_context": {
+    "temperature": 34.0,
+    "humidity": 82,
+    "pm25": 46,
+    "air_quality": "MODERATE"
+  },
+  "facility_context": {
+    "facility_type": "factory",
+    "label": "공장",
+    "sensitivity": "MEDIUM",
+    "vulnerable_population": false
+  }
+}

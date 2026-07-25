@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S5",
+  "scenario_label": "학교 하교 시간 고농도 미세먼지",
+  "notes": "생체 지표는 정상이지만 환경·혼잡이 동시에 악화된 상황.",
+  "timestamp": "2026-07-24T16:05:00+09:00",
+  "vision_context": {
+    "person_count": 24,
+    "mask_rate": 0.29,
+    "crowding_level": "HIGH"
+  },
+  "health_context": {
+    "heart_rate": 88,
+    "spo2": 97,
+    "body_temperature": 36.9,
+    "stress_index": 35
+  },
+  "environment_context": {
+    "temperature": 30.5,
+    "humidity": 68,
+    "pm25": 88,
+    "air_quality": "BAD"
+  },
+  "facility_context": {
+    "facility_type": "school",
+    "label": "학교",
+    "sensitivity": "MEDIUM",
+    "vulnerable_population": true
+  }
+}
