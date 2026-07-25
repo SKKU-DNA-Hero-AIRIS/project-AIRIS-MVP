@@ -55,6 +55,26 @@ def _read_cache() -> Optional[dict[str, Any]]:
         return None
 
 
+def read_latest_external_context() -> dict[str, Any]:
+    cached = _read_cache()
+    if cached is not None:
+        return cached
+    return {
+        "location": "미선택",
+        "source": "DEMO",
+        "timestamp": None,
+        "environment_context": {
+            "temperature": 25.0,
+            "humidity": 60,
+            "pm25": 20.0,
+            "pm10": 35.0,
+            "precipitation": 0.0,
+            "rain": False,
+            "air_quality": "MODERATE",
+        },
+    }
+
+
 def fetch_external_context(location_name: str) -> dict[str, Any]:
     latitude, longitude = LOCATIONS[location_name]
     return fetch_external_context_by_coordinates(

@@ -11,6 +11,7 @@ import av
 import cv2
 from ultralytics import YOLO
 
+from live_context_store import write_vision_context
 from vision_demo import (
     VisionContextResult,
     boxes_for_class,
@@ -37,6 +38,7 @@ class LiveVisionState:
                 "timestamp": round(time.time(), 3),
                 "vision_context": asdict(result),
             }
+        write_vision_context(asdict(result))
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:

@@ -18,7 +18,15 @@ from external_context import (
     LOCATIONS,
     build_facility_context,
     fetch_external_context_by_coordinates,
+    read_latest_external_context,
     reverse_geocode,
+)
+from integrated_context import analyze_live_context
+from live_context_store import (
+    read_facility_context,
+    read_vision_context,
+    write_facility_context,
+    write_vision_context,
 )
 from physiological_store import read_context, write_context
 from vision_demo import analyze_video
@@ -45,6 +53,22 @@ st.markdown(
     [data-testid="stFileUploader"] {
       border:1px solid #243444; border-radius:12px; padding:.6rem;
     }
+    .risk-hero {
+      border:1px solid #2a3b4d;
+      border-radius:20px;
+      padding:28px 32px;
+      margin:.5rem 0 1.25rem;
+      background:linear-gradient(135deg, #101d29 0%, #0b151f 100%);
+    }
+    .risk-hero.high { border-color:#ef5350; box-shadow:0 0 32px #ef535024; }
+    .risk-hero.medium { border-color:#ffb547; box-shadow:0 0 32px #ffb5471f; }
+    .risk-hero.low { border-color:#37c98b; box-shadow:0 0 32px #37c98b1f; }
+    .risk-label { color:#91a4b5; font-size:13px; font-weight:700; letter-spacing:.16em; }
+    .risk-value { margin-top:4px; font-size:64px; font-weight:800; line-height:1; }
+    .risk-value.high { color:#ff6562; }
+    .risk-value.medium { color:#ffc263; }
+    .risk-value.low { color:#48d99d; }
+    .risk-meta { margin-top:14px; color:#c0ccd6; font-size:16px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -60,7 +84,13 @@ with st.sidebar:
     st.header("입력 방식")
     input_mode = st.radio(
         "분석할 영상을 선택하세요",
-        ["영상 파일 업로드", "실시간 카메라", "생체 데이터", "외부 환경"],
+        [
+            "영상 파일 업로드",
+            "실시간 카메라",
+            "생체 데이터",
+            "외부 환경",
+            "통합 판단",
+        ],
         label_visibility="collapsed",
     )
     if input_mode == "영상 파일 업로드":
@@ -339,6 +369,7 @@ if input_mode == "외부 환경":
         facility_type,
         vulnerable_population,
     )
+    write_facility_context(facility_context)
 
     external_metrics = st.columns(5)
     external_metrics[0].metric(
@@ -373,6 +404,71 @@ if input_mode == "외부 환경":
             "facility_context": facility_context,
         }
     )
+    st.stop()
+
+
+if input_mode == "통합 판단":
+    st_autorefresh(interval=1000, key="integrated-context-refresh")
+    latest_vision = read_vision_context()
+    latest_health = read_context()
+    latest_external = read_latest_external_context()
+    latest_environment = latest_external["environment_context"]
+    latest_facility = read_facility_context()
+
+    integrated_context, integrated_result = analyze_live_context(
+        latest_vision,
+        latest_health,
+        latest_environment,
+        latest_facility,
+    )
+    control_level = integrated_result.control_level
+
+    st.subheader("통합 제어")
+    risk_class = integrated_result.overall_risk.lower()
+    st.markdown(
+        f"""
+        <div class="risk-hero {risk_class}">
+          <div class="risk-label">OVERALL RISK</div>
+          <div class="risk-value {risk_class}">{integrated_result.overall_risk}</div>
+          <div class="risk-meta">
+            최종 제어 <b>AIR GATE {control_level}</b>
+            &nbsp;·&nbsp; 신뢰도 <b>{integrated_result.confidence}%</b>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.caption("실시간 입력")
+    context_columns = st.columns(4)
+    context_columns[0].metric(
+        "VISION",
+        f"{latest_vision['person_count']}명",
+        latest_vision["crowding_level"],
+        delta_color="off",
+    )
+    context_columns[1].metric(
+        "HEALTH",
+        f"{latest_health['body_temperature']:.1f}℃",
+        f"SpO₂ {latest_health['spo2']}%",
+        delta_color="off",
+    )
+    context_columns[2].metric(
+        "ENVIRONMENT",
+        f"PM2.5 {latest_environment['pm25']:.1f}",
+        latest_environment["air_quality"],
+        delta_color="off",
+    )
+    context_columns[3].metric(
+        "FACILITY",
+        latest_facility["facility_type"],
+        latest_facility["risk_level"],
+        delta_color="off",
+    )
+
+    if integrated_result.reasons:
+        st.markdown("#### 판단 근거")
+        st.write(" · ".join(integrated_result.reasons))
     st.stop()
 
 
@@ -414,6 +510,7 @@ if not active_video.exists() or not active_result.exists():
 st.subheader(st.session_state.get("video_title", "Firefly 카페 데모"))
 
 payload = json.loads(active_result.read_text(encoding="utf-8"))
+write_vision_context(payload["vision_context"])
 timeline = payload["timeline"]
 video_base64 = base64.b64encode(active_video.read_bytes()).decode("ascii")
 
