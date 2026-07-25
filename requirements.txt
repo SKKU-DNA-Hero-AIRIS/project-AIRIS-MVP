@@ -6,3 +6,9 @@ imageio>=2.37,<3
 imageio-ffmpeg>=0.6,<1
 ultralytics>=8.3,<9
 huggingface-hub>=0.24,<1
+
+# 합성 데이터 생성 및 위험도 모델 (data/, airis/risk_model.py)
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.3

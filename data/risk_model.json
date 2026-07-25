@@ -1,0 +1,86 @@
+{
+  "features": [
+    "temp_resid",
+    "hr_resid",
+    "spo2_resid",
+    "temp_resid_missing",
+    "hr_resid_missing",
+    "spo2_resid_missing"
+  ],
+  "coef": {
+    "temp_resid": 0.34139097625752207,
+    "hr_resid": 0.46061918790674933,
+    "spo2_resid": -0.2117403973324525,
+    "temp_resid_missing": 0.03765910065616063,
+    "hr_resid_missing": 0.1396565853036855,
+    "spo2_resid_missing": 0.13018797863264325
+  },
+  "intercept": -2.0603195912299355,
+  "standardize": {
+    "mean": {
+      "temp_resid": 0.04295088650501811,
+      "hr_resid": 1.5247392216099682,
+      "spo2_resid": 0.6598232915788194,
+      "temp_resid_missing": 0.17053364269141533,
+      "hr_resid_missing": 0.46182240033748156,
+      "spo2_resid_missing": 0.6861421641004007
+    },
+    "std": {
+      "temp_resid": 0.7636838815661973,
+      "hr_resid": 14.362041912692911,
+      "spo2_resid": 1.1342212248528594,
+      "temp_resid_missing": 0.3761207770338778,
+      "hr_resid_missing": 0.49856663113264466,
+      "spo2_resid_missing": 0.4640838380166204
+    }
+  },
+  "impute": {
+    "temp_resid": 0.01573762393139333,
+    "hr_resid": 1.433735834274131,
+    "spo2_resid": 1.001574659273487
+  },
+  "env_calibration": {
+    "meas_temp": {
+      "intercept": 36.26520117061616,
+      "slopes": {
+        "ambient_temp": 0.03567984533624617,
+        "humidity": 0.002444904264268924,
+        "pm25": 0.00023627705750122602
+      },
+      "n_train": 6859
+    },
+    "meas_hr": {
+      "intercept": 58.21872675195927,
+      "slopes": {
+        "ambient_temp": 0.8296731312686167,
+        "humidity": -0.025305425864019737,
+        "pm25": 0.005345306659108928
+      },
+      "n_train": 4481
+    },
+    "meas_spo2": {
+      "intercept": 99.65269600984287,
+      "slopes": {
+        "ambient_temp": -0.008912226704867932,
+        "humidity": -0.008844245712725643,
+        "pm25": -0.0034838978892726418
+      },
+      "n_train": 2606
+    }
+  },
+  "thresholds": {
+    "p90": 0.2068459303099354,
+    "p95": 0.25959332264616836,
+    "p98": 0.3459867031384452
+  },
+  "metrics": {
+    "pr_auc_test": 0.6285891257771682,
+    "train_prevalence": 0.12855937565914363,
+    "test_prevalence": 0.38249238062986796
+  },
+  "trained_on": [
+    "gate_school_spring.jsonl",
+    "gate_hospital_summer.jsonl"
+  ],
+  "tested_on": "gate_hospital_outbreak.jsonl"
+}
