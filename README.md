@@ -1050,6 +1050,31 @@ streamlit run realtime_vision_app.py
 사람·마스크 탐지 결과를 표시하고, 현재 `vision_context` JSON을 실시간으로
 갱신한다. `START` 버튼을 누른 뒤 브라우저의 카메라 접근을 허용해야 한다.
 
+`보행 분석` 모드는 YOLO Pose 관절점을 시간축으로 누적하여 보행속도, 좌우
+보행 비대칭, 팔 흔들림 비대칭과 체간 전방굴곡을 `gait_context`로 표시한다.
+정면 촬영에서는 지지기저면/어깨너비 비율을 보조 지표로 제공한다. 속도
+계산에는 화면의 실제 폭 입력이 필요하며, 측면에서 2개 스트라이드 이상
+통과해야 주요 지표가 확정된다. 결과는 선별용 관찰 지표이며 질병을 진단하지
+않는다.
+
+```json
+{
+  "gait_context": {
+    "measurement_status": "측정 완료",
+    "view": "SIDE",
+    "duration_sec": 4.2,
+    "observed_strides": 2,
+    "walking_speed_mps": 0.91,
+    "gait_asymmetry": 0.12,
+    "arm_swing_asymmetry": 0.18,
+    "trunk_flexion_deg": 8.4,
+    "base_of_support_ratio": null,
+    "measurement_confidence": 0.86,
+    "observations": ["뚜렷한 보행 비대칭 경향 없음"]
+  }
+}
+```
+
 `생체 데이터` 모드는 Apple Watch 없이도 아이폰에서 시연용 심박수, SpO₂,
 체온과 스트레스 지수를 입력해 Mac 모니터링 화면으로 전송한다. 아이폰과
 Mac은 같은 Wi-Fi에 연결하고 동일한 Streamlit 주소를 열어야 한다.
@@ -1062,6 +1087,15 @@ Mac은 같은 Wi-Fi에 연결하고 동일한 Streamlit 주소를 열어야 한�
 `통합 판단` 모드는 Vision, 생체, 외부 환경과 시설의 최신 Context를 결합해
 사용자·환경·혼잡·시설 위험도를 계산하고 최종 Air Gate 제어 수준과 판단
 근거를 실시간으로 표시한다.
+
+통합 결과에 대해 질문하는 별도 실험용 화면은 다음 명령으로 실행한다.
+
+```bash
+streamlit run context_chat_app.py --server.port 8503
+```
+
+Groq를 사용하려면 사이드바에 API Key를 입력하거나 `GROQ_API_KEY` 환경
+변수로 설정한다. 키가 없으면 측정값 기반 기본 응답 모드로 작동한다.
 
 분석 결과는 다음 표준 형식으로 제공된다.
 

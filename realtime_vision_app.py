@@ -29,6 +29,7 @@ from live_context_store import (
     write_vision_context,
 )
 from physiological_store import read_context, write_context
+from posture_analysis import LivePostureState, WebcamPostureProcessor, load_pose_model
 from vision_demo import analyze_video
 from webcam_vision import LiveVisionState, WebcamVisionProcessor, load_webcam_models
 
@@ -87,6 +88,7 @@ with st.sidebar:
         [
             "영상 파일 업로드",
             "실시간 카메라",
+            "보행 분석",
             "생체 데이터",
             "외부 환경",
             "통합 판단",
@@ -106,13 +108,18 @@ with st.sidebar:
             use_container_width=True,
             disabled=uploaded_file is None,
         )
-    elif input_mode == "실시간 카메라":
+    elif input_mode in ("실시간 카메라", "보행 분석"):
         st.caption("카메라 영상은 저장하지 않습니다.")
 
 
 @st.cache_resource(show_spinner="사람·마스크 탐지 모델을 불러오는 중…")
 def get_webcam_models():
     return load_webcam_models()
+
+
+@st.cache_resource(show_spinner="포즈 추정 모델을 불러오는 중…")
+def get_pose_model():
+    return load_pose_model()
 
 
 if input_mode == "실시간 카메라":
@@ -167,6 +174,100 @@ if input_mode == "실시간 카메라":
     st.caption(
         "LOW: 0~3명 · MEDIUM: 4~7명 · HIGH: 8명 이상 · "
         "성능 최적화를 위해 사람은 매 6프레임, 마스크는 매 18프레임마다 분석합니다."
+    )
+    st.stop()
+
+if input_mode == "보행 분석":
+    st.subheader("실시간 보행 바이오마커")
+    st.info("카메라를 옆에 두고 전신이 보이도록 화면을 가로질러 2개 스트라이드 이상 걸으세요.")
+
+    calibration_width_m = st.slider(
+        "화면 전체 실제 폭",
+        1.0,
+        5.0,
+        2.0,
+        0.1,
+        help="카메라 화면의 왼쪽 끝부터 오른쪽 끝까지 실제 거리입니다.",
+    )
+
+    if "live_posture_state" not in st.session_state:
+        st.session_state["live_posture_state"] = LivePostureState()
+    posture_state = st.session_state["live_posture_state"]
+    pose_model = get_pose_model()
+
+    video_column, context_column = st.columns([1.55, 0.75], gap="large")
+    with video_column:
+        posture_camera = webrtc_streamer(
+            key="airis-posture-webcam",
+            mode=WebRtcMode.SENDRECV,
+            rtc_configuration=RTCConfiguration(
+                {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+            ),
+            media_stream_constraints={
+                "video": {
+                    "width": {"ideal": 640},
+                    "height": {"ideal": 480},
+                    "frameRate": {"ideal": 15, "max": 20},
+                },
+                "audio": False,
+            },
+            video_processor_factory=lambda: WebcamPostureProcessor(
+                posture_state,
+                pose_model,
+                calibration_width_m=calibration_width_m,
+            ),
+            async_processing=True,
+        )
+
+    if posture_camera.state.playing:
+        st_autorefresh(interval=1000, key="posture-json-refresh")
+
+    posture_payload = posture_state.snapshot()
+    posture_context = posture_payload["posture_context"]
+    gait_context = posture_payload["gait_context"]
+    with context_column:
+        st.caption("GAIT CONTEXT")
+        status_columns = st.columns(2)
+        status_columns[0].metric("상태", gait_context["measurement_status"])
+        status_columns[1].metric("스트라이드", gait_context["observed_strides"])
+
+        metric_columns = st.columns(2)
+        speed = gait_context["walking_speed_mps"]
+        metric_columns[0].metric(
+            "보행속도",
+            f"{speed:.2f} m/s" if speed is not None else "측정 중",
+        )
+        confidence = gait_context["measurement_confidence"]
+        metric_columns[1].metric("신뢰도", f"{confidence * 100:.0f}%")
+
+        asymmetry_columns = st.columns(2)
+        gait_asymmetry = gait_context["gait_asymmetry"]
+        asymmetry_columns[0].metric(
+            "좌우 비대칭",
+            f"{gait_asymmetry:.2f}" if gait_asymmetry is not None else "-",
+        )
+        arm_asymmetry = gait_context["arm_swing_asymmetry"]
+        asymmetry_columns[1].metric(
+            "팔 흔들림 비대칭",
+            f"{arm_asymmetry:.2f}" if arm_asymmetry is not None else "-",
+        )
+
+        trunk_angle = gait_context["trunk_flexion_deg"]
+        st.metric(
+            "체간 전방굴곡",
+            f"{trunk_angle:.1f}°" if trunk_angle is not None else "측면 필요",
+        )
+        base_ratio = gait_context["base_of_support_ratio"]
+        if base_ratio is not None:
+            st.metric("지지기저면 / 어깨너비", f"{base_ratio:.2f}")
+        for observation in gait_context["observations"]:
+            st.write(f"• {observation}")
+        with st.expander("Gait Context JSON"):
+            st.json(posture_payload)
+
+    st.caption(
+        "RGB 카메라 기반 비접촉 보행 선별 지표이며 의료 진단이 아닙니다. "
+        "속도는 설정한 화면 폭을 기준으로 계산하므로 시연 전 거리 보정이 필요합니다."
     )
     st.stop()
 
