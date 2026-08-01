@@ -13,3 +13,60 @@ tools/bin/
 # synthetic data outputs (regenerate via data/README.md)
 data/*.jsonl
 data/*.csv
+
+# Large gait datasets
+data/raw/*
+data/processed/*
+
+# Keep directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Dataset archives
+*.zip
+*.7z
+*.rar
+*.z01
+*.z02
+*.z03
+*.z04
+*.z05
+*.z06
+*.z07
+*.z08
+*.z09
+*.z10
+*.z11
+*.z12
+*.z13
+*.z14
+*.z15
+*.z16
+*.z17
+*.z18
+*.z19
+*.z20
+*.z21
+*.z22
+*.z23
+*.z24
+*.z25
+
+# Raw sensor and video files
+*.mtb
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.bag
+*.c3d
+
+# Large array and model files
+*.npy
+*.npz
+*.pt
+*.pth
+*.onnx
+
+# Preserve sample directory placeholders
+!data/**/sample/.gitkeep

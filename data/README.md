@@ -1,3 +1,47 @@
+# AIRIS Gait Datasets
+
+AIRIS의 영상 기반 보행 분석 연구에 활용하는 공개 데이터셋을 정리한 문서입니다.
+
+대용량 원본 데이터는 본 GitHub 저장소에 직접 업로드하지 않습니다. 각 데이터셋은 공식 저장소에서 개별적으로 내려받아 로컬의 `data/raw/`에 저장합니다.
+
+## 데이터셋 구성
+
+| 데이터셋 | 연구 내 역할 | 공식 저장소 |
+|---|---|---|
+| Health&Gait | 영상 기반 보행속도, 보폭, 케이던스, 지지시간 등의 추출 모델 개발 | https://zenodo.org/records/14039922 |
+| Kuopio Gait Dataset | OpenPose 추정값을 MoCap, IMU, Force plate와 비교하여 정확도 검증 | https://zenodo.org/records/10559504 |
+| Multi-sensor Human Gait Dataset | 동일인의 서로 다른 날짜 측정을 이용한 재현성과 개인 내 변화량 검증 | https://figshare.com/articles/dataset/14727231 |
+| PhysioNet Multi-camera Gait | 카메라 위치, 보행속도, 경로 변화에 대한 모델 강건성 검증 | https://physionet.org/content/multi-gait-posture/1.0.0/ |
+
+## 사용 원칙
+
+- `data/raw/`: 공식 저장소에서 내려받은 원본 데이터의 로컬 저장 위치
+- `data/processed/`: 분석을 위해 전처리한 결과의 로컬 저장 위치
+- 각 데이터셋의 `sample/`: GitHub에서 공유 가능한 최소 크기의 구조 예시만 저장
+- 원본 영상, 압축파일, IMU, MoCap 파일은 GitHub에 업로드하지 않음
+- 데이터셋별 라이선스와 인용 조건을 반드시 확인함
+
+## 산모 대상 연구
+
+공개 데이터셋에는 동일한 산모를 입소 초기부터 퇴소 시점까지 반복 측정한 데이터가 포함되어 있지 않습니다.
+
+최종 산후 회복 추세 검증을 위해서는 향후 다음 정보를 포함한 자체 산모 데이터 수집이 필요합니다.
+
+- 산모 익명 ID
+- 입소일
+- 출산 후 경과일
+- 동일 산모의 반복 보행 영상
+- 보행속도
+- 보폭
+- 케이던스
+- 양발 지지시간
+- 어깨 및 골반 움직임
+- 입소 초기 평균 대비 변화율
+
+임신 및 산후 여성의 보행지표 선정 근거는 `docs/references/pregnancy_gait_references.md`에서 관리합니다.
+
+---
+
 # Synthetic Biosignal & Gate Data
 
 > **에어게이트 Context-Aware 파이프라인의 입력 데이터 생성 계층**

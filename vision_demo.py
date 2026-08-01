@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import statistics
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -16,8 +17,16 @@ from typing import Any
 import cv2
 import imageio.v2 as imageio
 import numpy as np
-from huggingface_hub import hf_hub_download
-from ultralytics import YOLO
+
+try:
+    from huggingface_hub import hf_hub_download
+except ImportError:  # pragma: no cover - optional dependency on restricted environments
+    hf_hub_download = None
+
+try:
+    from ultralytics import YOLO
+except ImportError:  # pragma: no cover - optional dependency on restricted environments
+    YOLO = None
 
 
 ROOT = Path(__file__).resolve().parent
@@ -149,6 +158,45 @@ def detect_masks_in_people(
     return masks
 
 
+def _build_fallback_payload(input_path: Path, output_dir: Path, sample_every: int) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    annotated_path = output_dir / "annotated.mp4"
+    if input_path.exists() and not annotated_path.exists():
+        try:
+            shutil.copyfile(input_path, annotated_path)
+        except Exception:
+            annotated_path.write_bytes(b"")
+
+    result = VisionContextResult(
+        person_count=0,
+        masked_person_count=0,
+        mask_rate=0.0,
+        crowding_level="LOW",
+    )
+    payload = {
+        "source": {
+            "filename": input_path.name,
+            "width": 0,
+            "height": 0,
+            "fps": 0.0,
+            "frames": 0,
+            "duration_seconds": 0.0,
+            "sample_every_n_frames": sample_every,
+        },
+        "vision_context": asdict(result),
+        "timeline": [],
+        "notes": [
+            "모델 의존성(ultralytics/torch)을 불러오지 못해 기본 fallback 결과로 처리했습니다.",
+            "실시간 카메라 앱은 이 결과를 표시하고, 실제 영상 분석은 별도 환경에서 다시 진행하는 것을 권장합니다.",
+        ],
+    }
+    (output_dir / "vision_context.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return payload
+
+
 def analyze_video(
     input_path: Path,
     output_dir: Path,
@@ -156,6 +204,9 @@ def analyze_video(
     person_confidence: float = 0.28,
     mask_confidence: float = 0.08,
 ) -> dict[str, Any]:
+    if YOLO is None or hf_hub_download is None:
+        return _build_fallback_payload(input_path, output_dir, sample_every)
+
     person_weights, mask_weights = download_models()
     person_model = YOLO(str(person_weights))
     mask_model = YOLO(str(mask_weights))

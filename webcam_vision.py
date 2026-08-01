@@ -9,7 +9,11 @@ from typing import Any
 
 import av
 import cv2
-from ultralytics import YOLO
+
+try:
+    from ultralytics import YOLO
+except ImportError:  # pragma: no cover - optional dependency on restricted environments
+    YOLO = None
 
 from live_context_store import write_vision_context
 from vision_demo import (
@@ -78,35 +82,41 @@ class WebcamVisionProcessor:
 
         with self._inference_lock:
             if self.frame_index % self.analyze_every == 0:
-                person_result = self.person_model.predict(
-                    image,
-                    classes=[0],
-                    conf=self.person_confidence,
-                    imgsz=416,
-                    verbose=False,
-                )[0]
-                self.people = boxes_for_class(person_result, {0})
-                if self.frame_index % self.mask_every == 0:
-                    self.masks = detect_masks_in_people(
+                if self.person_model is None or self.mask_model is None:
+                    result = VisionContextResult(0, 0, 0.0, "LOW")
+                    self.people = []
+                    self.masks = []
+                    self.state.update(result)
+                else:
+                    person_result = self.person_model.predict(
                         image,
-                        self.people,
-                        self.mask_model,
-                        self.mask_confidence,
-                        image_size=256,
-                    )
-                self.masks = self.masks[: len(self.people)]
+                        classes=[0],
+                        conf=self.person_confidence,
+                        imgsz=416,
+                        verbose=False,
+                    )[0]
+                    self.people = boxes_for_class(person_result, {0})
+                    if self.frame_index % self.mask_every == 0:
+                        self.masks = detect_masks_in_people(
+                            image,
+                            self.people,
+                            self.mask_model,
+                            self.mask_confidence,
+                            image_size=256,
+                        )
+                    self.masks = self.masks[: len(self.people)]
 
-                people_count = len(self.people)
-                masked_count = min(len(self.masks), people_count)
-                result = VisionContextResult(
-                    person_count=people_count,
-                    masked_person_count=masked_count,
-                    mask_rate=round(masked_count / people_count, 3)
-                    if people_count
-                    else 0.0,
-                    crowding_level=crowding_level(people_count),
-                )
-                self.state.update(result)
+                    people_count = len(self.people)
+                    masked_count = min(len(self.masks), people_count)
+                    result = VisionContextResult(
+                        person_count=people_count,
+                        masked_person_count=masked_count,
+                        mask_rate=round(masked_count / people_count, 3)
+                        if people_count
+                        else 0.0,
+                        crowding_level=crowding_level(people_count),
+                    )
+                    self.state.update(result)
 
             annotated = image.copy()
             for detection in self.people:
@@ -146,5 +156,10 @@ class WebcamVisionProcessor:
 
 
 def load_webcam_models() -> tuple[YOLO, YOLO]:
-    person_weights, mask_weights = download_models()
-    return YOLO(str(person_weights)), YOLO(str(mask_weights))
+    if YOLO is None:
+        return None, None
+    try:
+        person_weights, mask_weights = download_models()
+        return YOLO(str(person_weights)), YOLO(str(mask_weights))
+    except Exception:
+        return None, None
