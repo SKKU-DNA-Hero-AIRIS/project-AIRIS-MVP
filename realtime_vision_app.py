@@ -14,6 +14,7 @@ from streamlit_autorefresh import st_autorefresh
 from streamlit_folium import st_folium
 from streamlit_webrtc import RTCConfiguration, WebRtcMode, webrtc_streamer
 
+from airis.body_profile import profile_from_contexts
 from external_context import (
     LOCATIONS,
     build_facility_context,
@@ -26,8 +27,10 @@ from live_context_store import (
     read_facility_context,
     read_vision_context,
     write_facility_context,
+    write_user_profile,
     write_vision_context,
 )
+from personalized_view import render_personalized_view
 from physiological_store import read_context, write_context
 from posture_analysis import LivePostureState, WebcamPostureProcessor, load_pose_model
 from vision_demo import analyze_video
@@ -92,6 +95,7 @@ with st.sidebar:
             "생체 데이터",
             "외부 환경",
             "통합 판단",
+            "맞춤 최적화",
         ],
         label_visibility="collapsed",
     )
@@ -262,6 +266,22 @@ if input_mode == "보행 분석":
             st.metric("지지기저면 / 어깨너비", f"{base_ratio:.2f}")
         for observation in gait_context["observations"]:
             st.write(f"• {observation}")
+
+        body_context = posture_payload["body_context"]
+        if body_context:
+            # Share the measured 체형 with the "맞춤 최적화" mode.
+            write_user_profile(
+                profile_from_contexts(body_context, gait_context).to_dict()
+            )
+            st.caption("BODY CONTEXT")
+            body_columns = st.columns(2)
+            body_columns[0].metric("추정 신장", f"{body_context['height_m']:.2f} m")
+            body_columns[1].metric(
+                "어깨폭",
+                f"{body_context['shoulder_width_m']:.2f} m",
+                "정면 실측" if body_context["source"] == "POSE_FRONT" else "비율 추정",
+                delta_color="off",
+            )
         with st.expander("Gait Context JSON"):
             st.json(posture_payload)
 
@@ -505,6 +525,11 @@ if input_mode == "외부 환경":
             "facility_context": facility_context,
         }
     )
+    st.stop()
+
+
+if input_mode == "맞춤 최적화":
+    render_personalized_view()
     st.stop()
 
 

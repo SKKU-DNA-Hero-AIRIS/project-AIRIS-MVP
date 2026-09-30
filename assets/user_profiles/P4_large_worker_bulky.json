@@ -1,0 +1,21 @@
+{
+  "profile_id": "P4",
+  "label": "큰 체형 작업자 (작업복)",
+  "notes": "어깨가 넓어 노즐과 가깝고, 부피 큰 의류로 입자 부착력이 높다.",
+  "body_profile": {
+    "height_m": 1.85,
+    "shoulder_width_m": 0.52,
+    "hip_width_m": 0.38,
+    "mass_kg": 98.0,
+    "posture": "STANDING",
+    "source": "PERSONA"
+  },
+  "user_traits": {
+    "walking_speed_mps": 1.4,
+    "age_group": "ADULT",
+    "mobility": "NORMAL",
+    "comfort_sensitivity": "NORMAL",
+    "clothing": "BULKY",
+    "mask_on": false
+  }
+}

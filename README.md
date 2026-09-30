@@ -2,6 +2,12 @@
 
 > **Multimodal Context-Aware AIoT System for Adaptive Air Gate Control**
 
+> **📌 주제 변경 제안 (2026-09-30, 팀 논의 중)**
+>
+> **체형·사용자 특성 기반 물리 시뮬레이션–AI 융합 사용자 맞춤형 에어게이트 최적화 시스템**
+>
+> 아래 1~23절의 맥락 기반 판단 계층은 그대로 유지하고, 그 위에 "같은 제어 수준을 사람마다 다르게 전달하는" 계층을 추가했다. 구현 내용은 [24절](#24-personalized-air-gate-주제-변경-제안)과 [docs/PERSONALIZED_OPTIMIZATION.md](docs/PERSONALIZED_OPTIMIZATION.md) 참고.
+
 ---
 
 ## 1. Project Overview
@@ -1108,8 +1114,61 @@ Groq를 사용하려면 사이드바에 API Key를 입력하거나 `GROQ_API_KEY
 }
 ```
 
+`맞춤 최적화` 모드는 통합 판단이 정한 제어 수준을 사용자 체형과 특성에 맞는
+구역별 노즐 풍속과 정지 시간으로 바꿔 고정 제어와 나란히 비교한다. `보행 분석`
+모드에서 추정한 신장·어깨폭이 자동으로 넘어오며, 페르소나 선택이나 직접 입력도
+가능하다. 자세한 내용은 24절 참고.
+
 ## Test
 
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+---
+
+# 24. Personalized Air Gate (주제 변경 제안)
+
+> **체형·사용자 특성 기반 물리 시뮬레이션–AI 융합 사용자 맞춤형 에어게이트 최적화 시스템**
+
+기존 MVP는 "얼마나 세게"(LOW / MEDIUM / HIGH)까지만 정하고, 그 결과를 누구에게나
+같은 고정 설정으로 내보냈다. 추가된 계층은 같은 제어 수준을 **지금 게이트에 선
+사람의 몸에 맞게** 전달한다.
+
+```text
+Context → ML + Rule → 제어 수준 ─────────────┐
+                                             ├→ 최적화 → 구역별 풍속 · 정지 시간 · 근거
+Pose → 체형 · 사용자 특성 → 물리 시뮬레이션 ─┘
+                              ↑↓
+                         AI 대리모델 (탐색) + 물리 검증
+```
+
+| 요소 | 구현 | 내용 |
+| --- | --- | --- |
+| 체형·사용자 특성 | `airis/body_profile.py` | 포즈 관절점 → 신장·어깨폭·신체 3구역, 보행속도·이동성·민감도 |
+| 물리 시뮬레이션 | `airis/gate_physics.py` | 제트 감쇠 → 표면 풍속 → 입자 탈리, 얼굴 풍속·측면 하중·팬 에너지 |
+| AI 융합 | `airis/surrogate.py` | 시뮬레이터 대리 신경망(NumPy MLP), 물리 기반 특징 입력 |
+| 최적화 | `airis/gate_optimizer.py` | 안전 한계는 투영으로 강제, 목표 제거율은 제약, 에너지·시간 최소화 |
+| 통합 | `airis/personalization.py` | 제어 수준 + 사용자 → `PersonalizedPlan` |
+
+페르소나 6명 × 제어 수준 3개 실행 결과(HIGH 발췌):
+
+| 사용자 | 고정 제어 | 맞춤 제어 |
+| --- | --- | --- |
+| 표준 성인 | 제거율 63.0 %, 1.02 Wh | 62.6 %, **0.77 Wh (−24 %)** |
+| 산모 (등록) | 얼굴 풍속 9.6 m/s — **한계 6 m/s 초과** | 6.0 m/s, 목표 충족, 0.57 Wh (−47 %) |
+| 어린이 | 제거율 47.5 %인데 얼굴 9.0 m/s·하중 2.0 % — **둘 다 초과** | 한계 내 최대 42.9 %, 관리자 확인 요청 |
+| 큰 체형 작업복 | 제거율 50.3 % — 목표 미달 | 52.8 %, 에너지 +18 % (맞춤이 항상 절약은 아님) |
+
+고정 제어는 18건 중 7건에서 사용자 안전 한계를 넘었고, 맞춤 제어는 18건 모두
+한계 안에서 16건의 목표(허용 오차 포함)를 지켰다.
+
+```bash
+python tools/train_gate_surrogate.py   # 대리모델 재학습 → assets/policy/gate_surrogate.json
+python tools/run_personalization.py    # 페르소나 비교 → assets/reports/personalization_report.json
+streamlit run personalized_gate_app.py --server.port 8504   # 카메라 스택 없이 실행 가능
+```
+
+> ⚠️ 물리 모델은 CFD나 실측이 아닌 **축소 차수 모델**이고, 탈리 곡선·안전 한계
+> 상수는 실험으로 교체해야 하는 가정값이다. 가정 목록과 남은 검증 작업은
+> [docs/PERSONALIZED_OPTIMIZATION.md](docs/PERSONALIZED_OPTIMIZATION.md)에 정리했다.

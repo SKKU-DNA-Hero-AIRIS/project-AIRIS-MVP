@@ -1,0 +1,21 @@
+{
+  "profile_id": "P1",
+  "label": "표준 체형 성인",
+  "notes": "고정 제어가 설계 기준으로 삼는 체형에 가까운 사용자.",
+  "body_profile": {
+    "height_m": 1.72,
+    "shoulder_width_m": 0.43,
+    "hip_width_m": 0.33,
+    "mass_kg": 68.0,
+    "posture": "STANDING",
+    "source": "PERSONA"
+  },
+  "user_traits": {
+    "walking_speed_mps": 1.3,
+    "age_group": "ADULT",
+    "mobility": "NORMAL",
+    "comfort_sensitivity": "NORMAL",
+    "clothing": "NORMAL",
+    "mask_on": false
+  }
+}

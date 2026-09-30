@@ -16,6 +16,8 @@ import numpy as np
 from ultralytics import YOLO
 from ultralytics.utils.downloads import attempt_download_asset
 
+from airis.body_profile import BodyProfileTracker
+
 
 ROOT = Path(__file__).resolve().parent
 POSE_WEIGHTS = ROOT / "models/yolo11n-pose.pt"
@@ -400,26 +402,32 @@ class LivePostureState:
             "timestamp": None,
             "posture_context": asdict(EMPTY_RESULT),
             "gait_context": asdict(EMPTY_GAIT_RESULT),
+            "body_context": None,
         }
 
     def update(
         self,
         result: PostureResult,
         gait_result: GaitResult = EMPTY_GAIT_RESULT,
+        body_context: Optional[dict[str, Any]] = None,
     ) -> None:
         with self._lock:
             self._payload = {
                 "timestamp": round(time.time(), 3),
                 "posture_context": asdict(result),
                 "gait_context": asdict(gait_result),
+                # Keep the last good 체형 estimate while the person is out of frame.
+                "body_context": body_context or self._payload["body_context"],
             }
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
+            body_context = self._payload["body_context"]
             return {
                 "timestamp": self._payload["timestamp"],
                 "posture_context": dict(self._payload["posture_context"]),
                 "gait_context": dict(self._payload["gait_context"]),
+                "body_context": dict(body_context) if body_context else None,
             }
 
 
@@ -441,6 +449,7 @@ class WebcamPostureProcessor:
         self.previous_hip_y: Optional[float] = None
         self.motion_score = 0.0
         self.gait_analyzer = TemporalGaitAnalyzer(calibration_width_m)
+        self.body_tracker = BodyProfileTracker()
         self._inference_lock = threading.Lock()
 
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
@@ -463,9 +472,14 @@ class WebcamPostureProcessor:
                         time.monotonic(),
                         image.shape[1],
                     )
+                    body = self.body_tracker.update(
+                        self.points,
+                        self.gait_analyzer.calibration_width_m / image.shape[1],
+                    )
                     self.state.update(
                         analyze_pose(self.points, movement),
                         gait_result,
+                        body.to_dict() if body is not None else None,
                     )
 
             annotated = image.copy()

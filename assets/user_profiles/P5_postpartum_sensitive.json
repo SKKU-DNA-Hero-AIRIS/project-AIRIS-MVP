@@ -1,0 +1,21 @@
+{
+  "profile_id": "P5",
+  "label": "산모 (시설 등록 민감 사용자)",
+  "notes": "민감 여부는 카메라로 추정하지 않고 시설 등록 정보로 받는다.",
+  "body_profile": {
+    "height_m": 1.62,
+    "shoulder_width_m": 0.39,
+    "hip_width_m": 0.35,
+    "mass_kg": 68.0,
+    "posture": "STANDING",
+    "source": "PERSONA"
+  },
+  "user_traits": {
+    "walking_speed_mps": 0.8,
+    "age_group": "ADULT",
+    "mobility": "SLOW",
+    "comfort_sensitivity": "SENSITIVE",
+    "clothing": "LIGHT",
+    "mask_on": true
+  }
+}

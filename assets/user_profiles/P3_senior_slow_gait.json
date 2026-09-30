@@ -1,0 +1,21 @@
+{
+  "profile_id": "P3",
+  "label": "고령 보행 약자",
+  "notes": "보행 분석에서 속도 0.6 m/s로 측정된 사용자. 통과 노출 시간이 길다.",
+  "body_profile": {
+    "height_m": 1.58,
+    "shoulder_width_m": 0.38,
+    "hip_width_m": 0.31,
+    "mass_kg": 56.0,
+    "posture": "STANDING",
+    "source": "PERSONA"
+  },
+  "user_traits": {
+    "walking_speed_mps": 0.6,
+    "age_group": "SENIOR",
+    "mobility": "SLOW",
+    "comfort_sensitivity": "NORMAL",
+    "clothing": "NORMAL",
+    "mask_on": true
+  }
+}

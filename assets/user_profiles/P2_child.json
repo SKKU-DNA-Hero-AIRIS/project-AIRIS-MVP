@@ -1,0 +1,21 @@
+{
+  "profile_id": "P2",
+  "label": "어린이 (만 6세 전후)",
+  "notes": "상단 노즐이 머리 위 허공을 향하고, 같은 풍속에서 체중 대비 하중이 가장 크다.",
+  "body_profile": {
+    "height_m": 1.15,
+    "shoulder_width_m": 0.29,
+    "hip_width_m": 0.22,
+    "mass_kg": 21.0,
+    "posture": "STANDING",
+    "source": "PERSONA"
+  },
+  "user_traits": {
+    "walking_speed_mps": 1.0,
+    "age_group": "CHILD",
+    "mobility": "NORMAL",
+    "comfort_sensitivity": "NORMAL",
+    "clothing": "NORMAL",
+    "mask_on": false
+  }
+}

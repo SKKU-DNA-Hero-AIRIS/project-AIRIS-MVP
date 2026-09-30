@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from airis import analyze_hybrid
+from airis.body_profile import REFERENCE_PROFILE, UserProfile
+from airis.gate_physics import fine_fraction_from_pm
 from airis.models import (
     EnvironmentContext,
     FacilityContext,
@@ -12,6 +14,7 @@ from airis.models import (
     MultimodalContext,
     VisionContext,
 )
+from airis.personalization import plan_personalized
 
 
 FACILITY_CODES = {
@@ -78,3 +81,34 @@ def analyze_live_context(
         facility,
     )
     return context, analyze_hybrid(context)
+
+
+def analyze_personalized_context(
+    vision: dict[str, Any],
+    health: dict[str, Any],
+    environment: dict[str, Any],
+    facility: dict[str, Any],
+    user_profile: dict[str, Any] | None = None,
+):
+    """Context decision first, then the gate plan fitted to the measured user.
+
+    Without a measured profile the plan is computed for the reference adult, so
+    the dashboard always has something to show.
+    """
+    context, decision = analyze_live_context(vision, health, environment, facility)
+    profile = (
+        UserProfile.from_dict(user_profile)
+        if user_profile and "body_profile" in user_profile
+        else REFERENCE_PROFILE
+    )
+    plan = plan_personalized(
+        profile,
+        decision.control_level,
+        actuation=decision.actuation,
+        crowding_level=context.vision_context.crowding_level,
+        fine_fraction=fine_fraction_from_pm(
+            float(environment.get("pm25", 20)),
+            environment.get("pm10"),
+        ),
+    )
+    return context, decision, plan
